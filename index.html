@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TripPlanner - Seu Gerenciador de Viagens</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        [v-cloak] { display: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+        .animate-fade-in { animation: fade-in 0.2s ease-out; }
+        
+        @keyframes slide-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .animate-slide-up { animation: slide-up 0.3s ease-out; }
+    </style>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: { primary: '#3b82f6' }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-200">
+
+<div id="app" v-cloak class="max-w-md mx-auto min-h-screen flex flex-col pb-20">
+    <!-- Header Dinâmico -->
+    <header class="p-4 flex justify-between items-center sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md z-40 border-b dark:border-gray-800 h-16">
+        <div class="flex items-center gap-2 cursor-pointer truncate flex-grow mr-2" @click="goHome">
+            <div class="bg-primary p-2 rounded-lg text-white shrink-0">
+                <i data-lucide="plane" class="w-5 h-5"></i>
+            </div>
+            <h1 class="font-bold text-lg tracking-tight truncate">
+                {{ displayTitle }}
+            </h1>
+        </div>
+        <button @click="toggleDarkMode" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 shrink-0">
+            <i :data-lucide="isDark ? 'sun' : 'moon'" class="w-5 h-5"></i>
+        </button>
+    </header>
+
+    <main class="flex-grow p-4">
+        <!-- Home Screen -->
+        <div v-if="!selectedTrip">
+            <div class="flex gap-2 mb-6">
+                <button @click="showNewTripModal = true" class="flex-grow flex items-center justify-center gap-2 bg-primary text-white py-3 rounded-xl font-semibold shadow-lg shadow-primary/30">
+                    <i data-lucide="plus" class="w-5 h-5"></i> Nova Viagem
+                </button>
+                <button @click="exportData" title="Exportar" class="p-3 bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700">
+                    <i data-lucide="download" class="w-5 h-5 text-gray-600 dark:text-gray-400"></i>
+                </button>
+                <label class="p-3 bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 cursor-pointer">
+                    <i data-lucide="upload" class="w-5 h-5 text-gray-600 dark:text-gray-400"></i>
+                    <input type="file" class="hidden" @change="importData" accept=".json">
+                </label>
+            </div>
+
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-4">Minhas Viagens</h2>
+            <div v-if="trips.length === 0" class="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+                <i data-lucide="map" class="w-12 h-12 mx-auto mb-4 text-gray-300"></i>
+                <p class="text-gray-500">Nenhuma viagem planejada ainda.</p>
+            </div>
+
+            <div class="space-y-4 mb-8">
+                <div v-for="trip in trips" :key="trip.id" @click="selectTrip(trip)" class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm active:scale-95 transition-transform cursor-pointer">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 class="font-bold text-lg">{{ trip.location }}</h3>
+                            <p class="text-sm text-gray-500 flex items-center gap-1">
+                                <i data-lucide="calendar" class="w-3 h-3"></i>
+                                {{ formatDate(trip.startDate) }} - {{ formatDate(trip.endDate) }}
+                            </p>
+                        </div>
+                        <div class="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-bold px-2 py-1 rounded-full shrink-0 ml-2">
+                            {{ getDaysUntil(trip.startDate) }}
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center mt-4 border-t dark:border-gray-700 pt-3">
+                        <div class="flex gap-4">
+                           <div class="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold">
+                               <i data-lucide="dollar-sign" class="w-3 h-3"></i> {{ trip.finance?.length || 0 }}
+                           </div>
+                           <div class="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold">
+                               <i data-lucide="map-pin" class="w-3 h-3"></i> {{ trip.itinerary?.length || 0 }}
+                           </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button @click.stop="openEditTrip(trip)" class="p-2 text-gray-400 hover:text-primary transition-colors">
+                                <i data-lucide="pencil" class="w-4 h-4"></i>
+                            </button>
+                            <button @click.stop="deleteTrip(trip.id)" class="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-auto pt-6 border-t dark:border-gray-800">
+                <button @click="handleTestData" class="w-full py-4 px-4 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold text-gray-600 dark:text-gray-400 transition-all border border-transparent active:scale-95">
+                    <i data-lucide="database" class="w-4 h-4"></i>
+                    {{ trips.length > 0 ? 'Substituir por Dados de Teste' : 'Incluir Dados de Teste' }}
+                </button>
+                <p class="text-center text-[10px] text-gray-400 mt-2 uppercase tracking-widest font-semibold">Uso demonstrativo</p>
+            </div>
+        </div>
+
+        <!-- Trip Details Screen -->
+        <div v-else>
+            <div class="flex gap-2 mb-6">
+                <button @click="goHome" class="p-3 bg-gray-200/50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </button>
+                <div class="flex-grow flex bg-gray-200/50 dark:bg-gray-800/50 p-1 rounded-xl">
+                    <button v-for="tab in tabs" :key="tab.id" @click="currentTab = tab.id" 
+                        :title="tab.label"
+                        :class="['flex-1 flex items-center justify-center py-2 rounded-lg transition-all', 
+                        currentTab === tab.id ? 'bg-white dark:bg-gray-700 shadow-sm text-primary scale-105' : 'text-gray-500']">
+                        <i :data-lucide="tab.icon" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Tab: Financeiro -->
+                <div v-if="currentTab === 'finance'">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg">Gastos</h3>
+                        <button @click="openAddModal('finance')" class="bg-primary text-white p-2 rounded-lg"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                    </div>
+                    <div v-if="!selectedTrip.finance || selectedTrip.finance.length === 0" class="text-center py-8 text-gray-500 italic">Nenhum gasto.</div>
+                    <div v-for="(group, date) in groupedFinance" :key="date" class="mb-6">
+                        <div class="flex justify-between border-b dark:border-gray-800 pb-1 mb-3">
+                            <span class="text-sm font-bold text-gray-500">{{ formatDate(date) }}</span>
+                            <span class="text-sm font-bold text-primary">{{ formatCurrency(group.total) }}</span>
+                        </div>
+                        <div class="space-y-3">
+                            <div v-for="item in group.items" :key="item.id" class="flex justify-between items-center bg-white dark:bg-gray-800 p-3 rounded-xl border dark:border-gray-700 group">
+                                <div class="flex items-center gap-3 overflow-hidden">
+                                    <div :class="getCategoryColor(item.type)" class="p-2 rounded-lg text-white shrink-0">
+                                        <i :data-lucide="getCategoryIcon(item.type)" class="w-4 h-4"></i>
+                                    </div>
+                                    <div class="truncate">
+                                        <p class="font-semibold text-sm truncate">{{ item.name }}</p>
+                                        <p class="text-[10px] text-gray-500 uppercase truncate">{{ item.paidBy }} • {{ item.method }}</p>
+                                    </div>
+                                </div>
+                                <div class="text-right flex items-center gap-2 shrink-0 ml-2">
+                                    <p class="font-bold text-sm mr-2">{{ formatCurrency(item.value) }}</p>
+                                    <button @click="openEditItem('finance', item)" class="p-1 text-gray-400 hover:text-primary"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                                    <button @click="removeItem('finance', item.id)" class="p-1 text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-8 p-4 bg-primary text-white rounded-2xl flex justify-between items-center shadow-lg shadow-primary/20">
+                        <span class="font-medium">Total Geral</span>
+                        <span class="text-xl font-black">{{ formatCurrency(totalFinance) }}</span>
+                    </div>
+                </div>
+
+                <!-- Tab: Roteiro -->
+                <div v-if="currentTab === 'itinerary'">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg">Programação</h3>
+                        <button @click="openAddModal('itinerary')" class="bg-primary text-white p-2 rounded-lg"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                    </div>
+                    <div v-if="!selectedTrip.itinerary || selectedTrip.itinerary.length === 0" class="text-center py-8 text-gray-500 italic">Nenhum item.</div>
+                    <div v-for="(group, date) in groupedItinerary" :key="date" class="mb-6 relative pl-4 border-l-2 border-primary/30">
+                        <div class="absolute w-3 h-3 bg-primary rounded-full -left-[7px] top-1"></div>
+                        <h4 class="text-sm font-bold text-primary mb-3">{{ formatDate(date) }}</h4>
+                        <div class="space-y-4">
+                            <div v-for="item in group" :key="item.id" class="bg-white dark:bg-gray-800 p-3 rounded-xl border dark:border-gray-700 flex justify-between items-start">
+                                <div class="flex gap-3 overflow-hidden">
+                                    <span class="text-xs font-bold text-primary bg-primary/10 px-2 py-1 rounded h-fit shrink-0">{{ item.time }}</span>
+                                    <div class="truncate">
+                                        <p class="font-semibold text-sm truncate">{{ item.name }}</p>
+                                        <a v-if="item.link" :href="item.link" target="_blank" class="text-blue-500 text-[10px] flex items-center gap-1 mt-1 font-medium">
+                                            <i data-lucide="map-pin" class="w-3 h-3"></i> VER MAPA
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="flex gap-1 shrink-0 ml-2">
+                                    <button @click="openEditItem('itinerary', item)" class="p-1 text-gray-400 hover:text-primary"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                                    <button @click="removeItem('itinerary', item.id)" class="p-1 text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Links -->
+                <div v-if="currentTab === 'links'">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg">Links Úteis</h3>
+                        <button @click="openAddModal('links')" class="bg-primary text-white p-2 rounded-lg"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                    </div>
+                    <div v-for="(links, type) in groupedLinks" :key="type" class="mb-4">
+                        <h4 class="text-xs font-bold uppercase text-gray-400 mb-2">{{ type }}</h4>
+                        <div class="space-y-2">
+                            <div v-for="link in links" :key="link.id" class="flex justify-between items-center bg-white dark:bg-gray-800 p-3 rounded-xl border dark:border-gray-700">
+                                <a :href="link.url" target="_blank" class="flex items-center gap-3 flex-grow truncate">
+                                    <i data-lucide="link-2" class="w-4 h-4 text-blue-500"></i>
+                                    <span class="text-sm font-medium truncate">{{ link.name }}</span>
+                                </a>
+                                <div class="flex gap-1">
+                                    <button @click="openEditItem('links', link)" class="p-1 text-gray-400 hover:text-primary"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                                    <button @click="removeItem('links', link.id)" class="p-1 text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Documentos -->
+                <div v-if="currentTab === 'docs'">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg">Documentos</h3>
+                        <label class="bg-primary text-white p-2 rounded-lg cursor-pointer">
+                            <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                            <input type="file" class="hidden" @change="handleDocSelection" accept="image/*,application/pdf">
+                        </label>
+                    </div>
+                    <div v-if="!selectedTrip.docs || selectedTrip.docs.length === 0" class="text-center py-8 text-gray-500 italic">Nenhum documento.</div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div v-for="doc in selectedTrip.docs" :key="doc.id" @click="viewDocument(doc)" class="bg-white dark:bg-gray-800 p-2 rounded-xl border dark:border-gray-700 cursor-pointer hover:border-primary/50 transition-colors">
+                            <div class="h-28 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center mb-2 overflow-hidden">
+                                <i v-if="doc.type.includes('pdf')" data-lucide="file-text" class="w-10 h-10 text-red-500"></i>
+                                <img v-else :src="doc.data" class="object-cover w-full h-full">
+                            </div>
+                            <div class="flex justify-between items-center px-1">
+                                <p class="text-[11px] font-bold truncate flex-grow">{{ doc.name }}</p>
+                                <button @click.stop="removeItem('docs', doc.id)" class="text-gray-400 hover:text-red-500 ml-1">
+                                    <i data-lucide="trash-2" class="w-3 h-3"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Configurações -->
+                <div v-if="currentTab === 'settings'" class="animate-fade-in space-y-6">
+                    <h3 class="font-bold text-lg">Definições da Viagem</h3>
+                    
+                    <!-- Pessoas -->
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700">
+                        <h4 class="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                            <i data-lucide="users" class="w-4 h-4"></i> Pessoas
+                        </h4>
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            <div v-for="(p, idx) in selectedTrip.people" :key="idx" class="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2">
+                                {{ p }}
+                                <button @click="removeListSetting('people', idx)" class="text-gray-400 hover:text-red-500"><i data-lucide="x" class="w-3 h-3"></i></button>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <input v-model="newSettingValue" @keyup.enter="addListSetting('people')" placeholder="Nova pessoa..." class="flex-grow bg-gray-50 dark:bg-gray-900 rounded-xl px-3 py-2 text-sm outline-none">
+                            <button @click="addListSetting('people')" class="bg-primary text-white p-2 rounded-xl"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Pagamento -->
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700">
+                        <h4 class="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                            <i data-lucide="credit-card" class="w-4 h-4"></i> Formas de Pagamento
+                        </h4>
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            <div v-for="(p, idx) in selectedTrip.paymentMethods" :key="idx" class="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2">
+                                {{ p }}
+                                <button @click="removeListSetting('paymentMethods', idx)" class="text-gray-400 hover:text-red-500"><i data-lucide="x" class="w-3 h-3"></i></button>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <input v-model="newPaymentValue" @keyup.enter="addListSetting('paymentMethods')" placeholder="Novo método..." class="flex-grow bg-gray-50 dark:bg-gray-900 rounded-xl px-3 py-2 text-sm outline-none">
+                            <button @click="addListSetting('paymentMethods')" class="bg-primary text-white p-2 rounded-xl"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Tipos de Gasto -->
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700">
+                        <h4 class="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                            <i data-lucide="tags" class="w-4 h-4"></i> Tipos de Gasto
+                        </h4>
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            <div v-for="(p, idx) in selectedTrip.expenseTypes" :key="idx" class="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2">
+                                {{ p }}
+                                <button @click="removeListSetting('expenseTypes', idx)" class="text-gray-400 hover:text-red-500"><i data-lucide="x" class="w-3 h-3"></i></button>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <input v-model="newExpenseValue" @keyup.enter="addListSetting('expenseTypes')" placeholder="Novo tipo..." class="flex-grow bg-gray-50 dark:bg-gray-900 rounded-xl px-3 py-2 text-sm outline-none">
+                            <button @click="addListSetting('expenseTypes')" class="bg-primary text-white p-2 rounded-xl"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Tipos de Link -->
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700">
+                        <h4 class="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                            <i data-lucide="link" class="w-4 h-4"></i> Tipos de Link
+                        </h4>
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            <div v-for="(p, idx) in selectedTrip.linkTypes" :key="idx" class="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2">
+                                {{ p }}
+                                <button @click="removeListSetting('linkTypes', idx)" class="text-gray-400 hover:text-red-500"><i data-lucide="x" class="w-3 h-3"></i></button>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <input v-model="newLinkTypeValue" @keyup.enter="addListSetting('linkTypes')" placeholder="Nova categoria..." class="flex-grow bg-gray-50 dark:bg-gray-900 rounded-xl px-3 py-2 text-sm outline-none">
+                            <button @click="addListSetting('linkTypes')" class="bg-primary text-white p-2 rounded-xl"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Modals Extras -->
+    <div v-if="showNewTripModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-slide-up">
+            <h3 class="text-xl font-bold mb-4">{{ isEditing ? 'Editar Viagem' : 'Nova Viagem' }}</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-bold text-gray-500 uppercase">Destino</label>
+                    <input v-model="formTrip.location" type="text" placeholder="Ex: Roma, Itália" class="w-full bg-gray-100 dark:bg-gray-700 border-none rounded-xl p-3 mt-1 outline-none ring-primary focus:ring-2">
+                </div>
+                <div class="flex gap-4">
+                    <div class="flex-1">
+                        <label class="text-xs font-bold text-gray-500 uppercase">Início</label>
+                        <input v-model="formTrip.startDate" type="date" class="w-full bg-gray-100 dark:bg-gray-700 border-none rounded-xl p-3 mt-1 text-sm outline-none">
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-xs font-bold text-gray-500 uppercase">Fim</label>
+                        <input v-model="formTrip.endDate" type="date" class="w-full bg-gray-100 dark:bg-gray-700 border-none rounded-xl p-3 mt-1 text-sm outline-none">
+                    </div>
+                </div>
+                <div class="flex gap-2 pt-4">
+                    <button @click="closeTripModal" class="flex-1 py-3 text-gray-500 font-bold">Cancelar</button>
+                    <button @click="saveTrip" class="flex-1 bg-primary text-white py-3 rounded-xl font-bold">{{ isEditing ? 'Salvar' : 'Criar' }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Adicionar/Editar Item -->
+    <div v-if="activeAddModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-slide-up">
+            <h3 class="text-xl font-bold mb-4">{{ isEditing ? 'Editar' : 'Adicionar' }} {{ getModalTitle }}</h3>
+            <div class="space-y-4">
+                
+                <!-- FINANCE Form -->
+                <div v-if="activeAddModal === 'finance'" class="space-y-3">
+                    <input v-model="formItem.name" placeholder="Nome do gasto" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
+                    <div class="flex gap-2">
+                        <input v-model.number="formItem.value" type="number" placeholder="Valor" class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
+                        <input v-model="formItem.date" type="date" class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase ml-2">Quem Pagou?</label>
+                        <select v-model="formItem.paidBy" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none mt-1">
+                            <option v-for="person in selectedTrip.people" :key="person" :value="person">{{ person }}</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-400 uppercase ml-2">Pagamento</label>
+                            <select v-model="formItem.method" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none mt-1">
+                                <option v-for="m in selectedTrip.paymentMethods" :key="m" :value="m">{{ m }}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-400 uppercase ml-2">Categoria</label>
+                            <select v-model="formItem.type" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none mt-1">
+                                <option v-for="t in selectedTrip.expenseTypes" :key="t" :value="t">{{ t }}</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ITINERARY Form -->
+                <div v-if="activeAddModal === 'itinerary'" class="space-y-3">
+                    <input v-model="formItem.name" placeholder="Atividade ou lugar" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
+                    <div class="flex gap-2">
+                        <input v-model="formItem.date" type="date" class="flex-grow bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
+                        <input v-model="formItem.time" type="time" class="w-28 bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
+                    </div>
+                    <input v-model="formItem.link" placeholder="Link (Google Maps, Site)" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
+                </div>
+
+                <!-- LINKS Form -->
+                <div v-if="activeAddModal === 'links'" class="space-y-3">
+                    <input v-model="formItem.name" placeholder="Título do link" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
+                    <input v-model="formItem.url" placeholder="https://..." class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
+                    <div>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase ml-2">Categoria</label>
+                        <select v-model="formItem.category" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none mt-1">
+                            <option v-for="cat in selectedTrip.linkTypes" :key="cat" :value="cat">{{ cat }}</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex gap-2 pt-4">
+                    <button @click="activeAddModal = null" class="flex-1 py-3 text-gray-500 font-bold">Cancelar</button>
+                    <button @click="saveItem" class="flex-1 bg-primary text-white py-3 rounded-xl font-bold">{{ isEditing ? 'Salvar' : 'Adicionar' }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lightbox de Documentos -->
+    <div v-if="viewingDoc" @click="viewingDoc = null" class="fixed inset-0 bg-black/95 z-[70] flex flex-col animate-fade-in">
+        <div class="p-4 flex justify-between items-center text-white">
+            <h4 class="font-bold truncate max-w-[80%]">{{ viewingDoc.name }}</h4>
+            <button class="p-2 bg-white/10 rounded-full"><i data-lucide="x"></i></button>
+        </div>
+        <div class="flex-grow flex items-center justify-center p-4 overflow-hidden">
+            <iframe v-if="viewingDoc.type.includes('pdf')" :src="viewingDoc.data" class="w-full h-full rounded-lg border-none bg-white"></iframe>
+            <img v-else :src="viewingDoc.data" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl">
+        </div>
+    </div>
+
+    <div v-if="showConfirmTestData" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-800 w-full max-w-xs rounded-3xl p-6 shadow-2xl animate-slide-up text-center">
+            <div class="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="alert-triangle" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-lg font-bold mb-2">Substituir Dados?</h3>
+            <p class="text-sm text-gray-500 mb-6">Esta ação apagará todas as suas viagens atuais para incluir os dados de teste.</p>
+            <div class="flex gap-2">
+                <button @click="showConfirmTestData = false" class="flex-1 py-3 text-gray-500 font-bold">Cancelar</button>
+                <button @click="confirmTestData" class="flex-1 bg-primary text-white py-3 rounded-xl font-bold">Sim, Substituir</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const { createApp, ref, computed, watch, onMounted, nextTick } = Vue;
+
+    createApp({
+        setup() {
+            const trips = ref([]);
+            const selectedTrip = ref(null);
+            const currentTab = ref('finance');
+            const isDark = ref(false);
+            const isEditing = ref(false);
+            
+            const newSettingValue = ref('');
+            const newPaymentValue = ref('');
+            const newExpenseValue = ref('');
+            const newLinkTypeValue = ref('');
+
+            const showNewTripModal = ref(false);
+            const activeAddModal = ref(null);
+            const viewingDoc = ref(null);
+            const showConfirmTestData = ref(false);
+
+            const formTrip = ref({ location: '', startDate: '', endDate: '' });
+            const formItem = ref({});
+
+            const tabs = [
+                { id: 'finance', label: 'Financeiro', icon: 'dollar-sign' },
+                { id: 'itinerary', label: 'Roteiro', icon: 'map' },
+                { id: 'links', label: 'Links', icon: 'link-2' },
+                { id: 'docs', label: 'Documentos', icon: 'file-text' },
+                { id: 'settings', label: 'Configurações', icon: 'settings' }
+            ];
+
+            const displayTitle = computed(() => {
+                if (!selectedTrip.value) return 'TripPlanner';
+                const label = tabs.find(t => t.id === currentTab.value)?.label || '';
+                return `${selectedTrip.value.location} :: ${label}`;
+            });
+
+            onMounted(() => {
+                const saved = localStorage.getItem('tripplanner_trips_v3');
+                trips.value = saved ? JSON.parse(saved) : [];
+                const theme = localStorage.getItem('tripplanner_theme');
+                isDark.value = theme === 'dark' || (window.matchMedia('(prefers-color-scheme: dark)').matches && !theme);
+                applyTheme();
+                nextTick(() => lucide.createIcons());
+            });
+
+            watch(trips, (newVal) => localStorage.setItem('tripplanner_trips_v3', JSON.stringify(newVal)), { deep: true });
+            watch([selectedTrip, currentTab, showNewTripModal, activeAddModal, viewingDoc, showConfirmTestData], () => nextTick(() => lucide.createIcons()));
+
+            const toggleDarkMode = () => {
+                isDark.value = !isDark.value;
+                localStorage.setItem('tripplanner_theme', isDark.value ? 'dark' : 'light');
+                applyTheme();
+            };
+            const applyTheme = () => document.documentElement.classList.toggle('dark', isDark.value);
+
+            // Migração e Padrões
+            const migrateTrip = (trip) => {
+                if (!trip.people) trip.people = ["Daniel"];
+                if (!trip.paymentMethods) trip.paymentMethods = ["Dinheiro", "Pix", "Cartão"];
+                if (!trip.expenseTypes) {
+                    trip.expenseTypes = ["Alimentação", "Transporte", "Hospedagem", "Turismo", "Compras", "Saúde", "Passagens", "Lazer", "Diversos"];
+                }
+                if (!trip.linkTypes) trip.linkTypes = ["Reservas", "Ingressos", "Transporte", "Dicas", "Mapas"];
+                return trip;
+            };
+
+            const selectTrip = (trip) => selectedTrip.value = migrateTrip(trip);
+            const goHome = () => selectedTrip.value = null;
+
+            const openEditTrip = (trip) => { isEditing.value = true; formTrip.value = { ...trip }; showNewTripModal.value = true; };
+            const closeTripModal = () => { showNewTripModal.value = false; isEditing.value = false; formTrip.value = { location: '', startDate: '', endDate: '' }; };
+            
+            const saveTrip = () => {
+                if (!formTrip.value.location) return;
+                if (isEditing.value) {
+                    const idx = trips.value.findIndex(t => t.id === formTrip.value.id);
+                    trips.value[idx] = { ...formTrip.value };
+                } else {
+                    const newT = migrateTrip({ 
+                        id: Date.now().toString(), 
+                        ...formTrip.value, 
+                        finance: [], 
+                        itinerary: [], 
+                        links: [], 
+                        docs: [],
+                        people: ["Daniel"] 
+                    });
+                    trips.value.push(newT);
+                }
+                closeTripModal();
+            };
+            const deleteTrip = (id) => { if (confirm('Excluir viagem?')) trips.value = trips.value.filter(t => t.id !== id); };
+
+            const openAddModal = (type) => {
+                isEditing.value = false; activeAddModal.value = type; formItem.value = { id: Date.now().toString() };
+                if (type === 'finance') { 
+                    formItem.value.date = new Date().toISOString().split('T')[0]; 
+                    formItem.value.type = selectedTrip.value.expenseTypes[0]; 
+                    formItem.value.paidBy = selectedTrip.value.people[0]; 
+                    formItem.value.method = selectedTrip.value.paymentMethods[0]; 
+                }
+                if (type === 'itinerary') formItem.value.date = selectedTrip.value.startDate;
+                if (type === 'links') formItem.value.category = selectedTrip.value.linkTypes[0];
+            };
+            
+            const openEditItem = (type, item) => { isEditing.value = true; activeAddModal.value = type; formItem.value = { ...item }; };
+            const saveItem = () => {
+                const list = selectedTrip.value[activeAddModal.value];
+                if (isEditing.value) { const idx = list.findIndex(i => i.id === formItem.value.id); list[idx] = { ...formItem.value }; }
+                else { list.push({ ...formItem.value }); }
+                activeAddModal.value = null;
+            };
+            const removeItem = (type, id) => { selectedTrip.value[type] = selectedTrip.value[type].filter(i => i.id !== id); };
+
+            const addListSetting = (key) => {
+                let val = '';
+                if(key === 'people') { val = newSettingValue.value; newSettingValue.value = ''; }
+                if(key === 'paymentMethods') { val = newPaymentValue.value; newPaymentValue.value = ''; }
+                if(key === 'expenseTypes') { val = newExpenseValue.value; newExpenseValue.value = ''; }
+                if(key === 'linkTypes') { val = newLinkTypeValue.value; newLinkTypeValue.value = ''; }
+                if (val && val.trim() && !selectedTrip.value[key].includes(val.trim())) {
+                    selectedTrip.value[key].push(val.trim());
+                }
+            };
+            const removeListSetting = (key, idx) => {
+                if(selectedTrip.value[key].length > 1) selectedTrip.value[key].splice(idx, 1);
+                else alert("A lista precisa de pelo menos um item.");
+            };
+
+            const handleDocSelection = (e) => {
+                const file = e.target.files[0]; if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => { 
+                    const name = prompt("Dê um nome ao documento:", file.name.split('.')[0]) || "Documento";
+                    if (!selectedTrip.value.docs) selectedTrip.value.docs = [];
+                    selectedTrip.value.docs.push({ id: Date.now().toString(), data: ev.target.result, type: file.type, name }); 
+                };
+                reader.readAsDataURL(file);
+            };
+            const viewDocument = (doc) => viewingDoc.value = doc;
+
+            const handleTestData = () => { if (trips.value.length > 0) showConfirmTestData.value = true; else confirmTestData(); };
+            
+            const confirmTestData = () => {
+                const now = new Date();
+                const future = (days) => { 
+                    const d = new Date(now); 
+                    d.setDate(d.getDate() + days); 
+                    return d.toISOString().split('T')[0]; 
+                };
+
+                trips.value = [
+                    migrateTrip({
+                        id: 'nyc-2026',
+                        location: 'Nova York, EUA',
+                        startDate: future(30),
+                        endDate: future(40),
+                        people: ["Daniel"],
+                        finance: [
+                            { id: 'f1', name: 'Passagens Delta', value: 4200, date: future(30), paidBy: 'Daniel', method: 'Cartão', type: 'Passagens' },
+                            { id: 'f2', name: 'Hotel Marriott Times Square', value: 8500, date: future(30), paidBy: 'Daniel', method: 'Cartão', type: 'Hospedagem' },
+                            { id: 'f3', name: 'Jantar no Keens Steakhouse', value: 650, date: future(31), paidBy: 'Daniel', method: 'Cartão', type: 'Alimentação' },
+                            { id: 'f4', name: 'MetroCard Ilimitado', value: 180, date: future(31), paidBy: 'Daniel', method: 'Dinheiro', type: 'Transporte' },
+                            { id: 'f5', name: 'Ingresso Observatório Edge', value: 220, date: future(32), paidBy: 'Daniel', method: 'Pix', type: 'Turismo' },
+                            { id: 'f6', name: 'Compras Apple Store', value: 5500, date: future(33), paidBy: 'Daniel', method: 'Cartão', type: 'Compras' },
+                            { id: 'f7', name: 'Almoço Shake Shack', value: 120, date: future(33), paidBy: 'Daniel', method: 'Dinheiro', type: 'Alimentação' },
+                            { id: 'f8', name: 'Show Broadway (Lion King)', value: 950, date: future(34), paidBy: 'Daniel', method: 'Cartão', type: 'Lazer' },
+                            { id: 'f9', name: 'Seguro Viagem Allianz', value: 450, date: future(30), paidBy: 'Daniel', method: 'Pix', type: 'Saúde' },
+                            { id: 'f10', name: 'Táxi Aeroporto', value: 350, date: future(40), paidBy: 'Daniel', method: 'Dinheiro', type: 'Transporte' }
+                        ],
+                        itinerary: [
+                            { id: 'i1', name: 'Voo Guarulhos -> JFK', date: future(30), time: '22:00', link: '' },
+                            { id: 'i2', name: 'Check-in no Hotel', date: future(31), time: '14:00', link: '' },
+                            { id: 'i3', name: 'Caminhada no Central Park', date: future(31), time: '16:30', link: 'https://maps.google.com' },
+                            { id: 'i4', name: 'Museu de História Natural', date: future(32), time: '10:00', link: 'https://maps.google.com' },
+                            { id: 'i5', name: 'Pôr do sol no High Line', date: future(32), time: '18:00', link: 'https://maps.google.com' },
+                            { id: 'i6', name: 'Compras na 5ª Avenida', date: future(33), time: '10:00', link: '' },
+                            { id: 'i7', name: 'Estátua da Liberdade', date: future(34), time: '09:00', link: 'https://maps.google.com' },
+                            { id: 'i8', name: 'Memorial 11 de Setembro', date: future(34), time: '14:00', link: 'https://maps.google.com' },
+                            { id: 'i9', name: 'Atravesar Ponte do Brooklyn', date: future(35), time: '17:00', link: 'https://maps.google.com' },
+                            { id: 'i10', name: 'Voo de Retorno JFK -> GRU', date: future(40), time: '20:00', link: '' }
+                        ],
+                        links: [
+                            { id: 'l1', name: 'Voucher do Hotel', url: 'https://marriott.com', category: 'Reservas' },
+                            { id: 'l2', name: 'Bilhete Aéreo Delta', url: 'https://delta.com', category: 'Transporte' },
+                            { id: 'l3', name: 'Guia de Restaurantes NY', url: 'https://eater.com/new-york', category: 'Dicas' },
+                            { id: 'l4', name: 'CityPASS Ingressos', url: 'https://citypass.com', category: 'Ingressos' },
+                            { id: 'l5', name: 'Mapa do Metrô PDF', url: 'https://mta.info', category: 'Mapas' },
+                            { id: 'l6', name: 'Reserva Broadway', url: 'https://broadway.com', category: 'Reservas' },
+                            { id: 'l7', name: 'Agenda de Eventos', url: 'https://timeout.com', category: 'Dicas' },
+                            { id: 'l8', name: 'Localização Outlet', url: 'https://maps.google.com', category: 'Mapas' },
+                            { id: 'l9', name: 'Apolice Seguro Viagem', url: 'https://allianz.com', category: 'Dicas' },
+                            { id: 'l10', name: 'Previsão do Tempo NY', url: 'https://accuweather.com', category: 'Dicas' }
+                        ],
+                        docs: []
+                    }),
+                    migrateTrip({
+                        id: 'lisboa-2026',
+                        location: 'Lisboa, Portugal',
+                        startDate: future(100),
+                        endDate: future(110),
+                        people: ["Daniel"],
+                        finance: [
+                            { id: 'f11', name: 'Voo TAP Portugal', value: 3800, date: future(100), paidBy: 'Daniel', method: 'Cartão', type: 'Passagens' },
+                            { id: 'f12', name: 'Airbnb em Alfama', value: 2900, date: future(100), paidBy: 'Daniel', method: 'Cartão', type: 'Hospedagem' },
+                            { id: 'f13', name: 'Jantar no Ponto Final', value: 250, date: future(101), paidBy: 'Daniel', method: 'Dinheiro', type: 'Alimentação' },
+                            { id: 'f14', name: 'Aluguel de Carro', value: 1200, date: future(102), paidBy: 'Daniel', method: 'Cartão', type: 'Transporte' },
+                            { id: 'f15', name: 'Castelo de S. Jorge', value: 80, date: future(102), paidBy: 'Daniel', method: 'Dinheiro', type: 'Turismo' },
+                            { id: 'f16', name: 'Vinhos no Alentejo', value: 450, date: future(103), paidBy: 'Daniel', method: 'Pix', type: 'Compras' },
+                            { id: 'f17', name: 'Pastéis de Belém', value: 60, date: future(104), paidBy: 'Daniel', method: 'Dinheiro', type: 'Alimentação' },
+                            { id: 'f18', name: 'Show de Fado', value: 300, date: future(104), paidBy: 'Daniel', method: 'Cartão', type: 'Lazer' },
+                            { id: 'f19', name: 'Trem para Sintra', value: 45, date: future(105), paidBy: 'Daniel', method: 'Dinheiro', type: 'Transporte' },
+                            { id: 'f20', name: 'Farmácia/Protetor', value: 90, date: future(105), paidBy: 'Daniel', method: 'Pix', type: 'Saúde' }
+                        ],
+                        itinerary: [
+                            { id: 'i11', name: 'Chegada Aeroporto LIS', date: future(100), time: '08:00', link: '' },
+                            { id: 'i12', name: 'Passeio por Alfama', date: future(101), time: '10:00', link: 'https://maps.google.com' },
+                            { id: 'i13', name: 'Miradouro Sra do Monte', date: future(101), time: '17:30', link: 'https://maps.google.com' },
+                            { id: 'i14', name: 'LX Factory', date: future(102), time: '15:00', link: 'https://maps.google.com' },
+                            { id: 'i15', name: 'Torre de Belém', date: future(103), time: '10:00', link: 'https://maps.google.com' },
+                            { id: 'i16', name: 'Mosteiro dos Jerónimos', date: future(103), time: '14:00', link: 'https://maps.google.com' },
+                            { id: 'i17', name: 'Bate e volta em Cascais', date: future(104), time: '09:00', link: '' },
+                            { id: 'i18', name: 'Palácio da Pena (Sintra)', date: future(105), time: '10:00', link: 'https://maps.google.com' },
+                            { id: 'i19', name: 'Quinta da Regaleira', date: future(105), time: '14:30', link: 'https://maps.google.com' },
+                            { id: 'i20', name: 'Retorno para o Brasil', date: future(110), time: '11:00', link: '' }
+                        ],
+                        links: [
+                            { id: 'l11', name: 'Reserva Airbnb', url: 'https://airbnb.com', category: 'Reservas' },
+                            { id: 'l12', name: 'Check-in Online TAP', url: 'https://flytap.com', category: 'Transporte' },
+                            { id: 'l13', name: 'Comboios de Portugal', url: 'https://cp.pt', category: 'Transporte' },
+                            { id: 'l14', name: 'Guia Lisboa Offline', url: 'https://lisboa.com', category: 'Dicas' },
+                            { id: 'l15', name: 'Mapa Miradouros', url: 'https://google.com/maps', category: 'Mapas' },
+                            { id: 'l16', name: 'Site Pastéis de Belém', url: 'https://pasteisdebelem.pt', category: 'Dicas' },
+                            { id: 'l17', name: 'Ingressos Sintra', url: 'https://parquesdesintra.pt', category: 'Ingressos' },
+                            { id: 'l18', name: 'Dicas de Restaurantes', url: 'https://timeout.pt', category: 'Dicas' },
+                            { id: 'l19', name: 'Free Walking Tour', url: 'https://freetour.com', category: 'Dicas' },
+                            { id: 'l20', name: 'Mapa da LX Factory', url: 'https://lxfactory.com', category: 'Mapas' }
+                        ],
+                        docs: []
+                    })
+                ];
+                showConfirmTestData.value = false;
+                alert('Daniel, as viagens de Nova York e Lisboa foram carregadas com 10 itens cada!');
+            };
+
+            const groupedFinance = computed(() => {
+                const g = {};
+                [...selectedTrip.value?.finance || []].sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach(i => {
+                    if (!g[i.date]) g[i.date] = { items: [], total: 0 };
+                    g[i.date].items.push(i); g[i.date].total += (i.value || 0);
+                });
+                return g;
+            });
+            const totalFinance = computed(() => selectedTrip.value?.finance?.reduce((s,i)=>s+(i.value||0),0) || 0);
+            const groupedItinerary = computed(() => {
+                const g = {};
+                [...selectedTrip.value?.itinerary || []].sort((a,b)=>{
+                    const d = new Date(a.date)-new Date(b.date); return d !== 0 ? d : a.time.localeCompare(b.time);
+                }).forEach(i => { if (!g[i.date]) g[i.date] = []; g[i.date].push(i); });
+                return g;
+            });
+            const groupedLinks = computed(() => {
+                const g = {}; selectedTrip.value?.links?.forEach(i => { const c = i.category || 'Outros'; if (!g[c]) g[c] = []; g[c].push(i); });
+                return g;
+            });
+
+            const formatDate = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'short'}) : '';
+            const formatCurrency = (v) => new Intl.NumberFormat('pt-BR', {style:'currency', currency:'BRL'}).format(v);
+            const getDaysUntil = (d) => {
+                const diff = Math.ceil((new Date(d) - new Date()) / 86400000);
+                return diff < 0 ? 'Concluída' : diff === 0 ? 'Hoje!' : `Faltam ${diff} dias`;
+            };
+
+            const normalize = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+            const getCategoryIcon = (t) => {
+                const n = normalize(t);
+                return { 
+                    alimentacao: 'utensils', transporte: 'car', turismo: 'camera', 
+                    compras: 'shopping-bag', saude: 'plus-square', hospedagem: 'home',
+                    passagens: 'plane', lazer: 'ticket', diversos: 'tag'
+                }[n] || 'tag';
+            };
+
+            const getCategoryColor = (t) => {
+                const n = normalize(t);
+                return { 
+                    alimentacao: 'bg-orange-500', transporte: 'bg-blue-500', turismo: 'bg-purple-500', 
+                    compras: 'bg-pink-500', saude: 'bg-red-500', hospedagem: 'bg-emerald-500',
+                    passagens: 'bg-cyan-600', lazer: 'bg-yellow-500', diversos: 'bg-gray-400'
+                }[n] || 'bg-gray-400';
+            };
+
+            const getModalTitle = computed(() => ({ finance: 'Gasto', itinerary: 'Item', links: 'Link' }[activeAddModal.value]));
+            
+            const exportData = () => {
+                const blob = new Blob([JSON.stringify(trips.value)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `TripPlanner_Backup.json`; a.click();
+            };
+            const importData = (e) => {
+                const reader = new FileReader(); reader.onload = (ev) => {
+                    try { const data = JSON.parse(ev.target.result); if (Array.isArray(data)) { trips.value = data; alert('Importado!'); } } catch(e) { alert('Erro.'); }
+                }; reader.readAsText(e.target.files[0]);
+            };
+
+            return {
+                trips, selectedTrip, currentTab, tabs, isDark, toggleDarkMode, displayTitle,
+                showNewTripModal, formTrip, saveTrip, openEditTrip, deleteTrip, selectTrip, goHome, closeTripModal,
+                formatDate, formatCurrency, getDaysUntil, exportData, importData,
+                activeAddModal, openAddModal, openEditItem, isEditing, formItem, saveItem, removeItem,
+                groupedFinance, totalFinance, getCategoryIcon, getCategoryColor,
+                groupedItinerary, groupedLinks, getModalTitle,
+                handleDocSelection, viewingDoc, viewDocument,
+                handleTestData, showConfirmTestData, confirmTestData,
+                addListSetting, removeListSetting, newSettingValue, newPaymentValue, newExpenseValue, newLinkTypeValue
+            };
+        }
+    }).mount('#app');
+</script>
+</body>
+</html>
