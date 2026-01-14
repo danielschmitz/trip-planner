@@ -108,7 +108,7 @@
             </div>
 
             <!-- Footer Buttons -->
-            <div v-if="!settings.hideDevButtons" class="mt-auto pt-6 border-t dark:border-gray-800 space-y-3 animate-fade-in">
+            <div v-if="!settings.hideDevButtons" class="mt-auto pt-6 border-t dark:border-gray-800 space-y-3 animate-fade-in text-center">
                 <button @click="handleTestData" class="w-full py-4 px-4 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold text-gray-600 dark:text-gray-400 transition-all border border-transparent active:scale-95">
                     <i data-lucide="database" class="w-4 h-4"></i>
                     {{ trips.length > 0 ? 'Substituir por Dados de Teste' : 'Incluir Dados de Teste' }}
@@ -144,7 +144,7 @@
                         <button @click="openAddModal('finance')" class="bg-primary text-white p-2 rounded-lg"><i data-lucide="plus" class="w-4 h-4"></i></button>
                     </div>
                     
-                    <div v-if="!selectedTrip.finance || selectedTrip.finance.length === 0" class="text-center py-8 text-gray-500 italic">Nenhum gasto.</div>
+                    <div v-if="!selectedTrip.finance || selectedTrip.finance.length === 0" class="text-center py-8 text-gray-500 italic">Nenhum gasto registrado.</div>
                     
                     <div v-for="(group, date) in groupedFinance" :key="date" class="mb-4">
                         <div @click="toggleCollapse('finance', date)" class="flex justify-between items-center border-b dark:border-gray-800 pb-1 mb-3 cursor-pointer hover:opacity-70 transition-opacity">
@@ -190,7 +190,7 @@
                         <span class="text-xl font-black">{{ formatCurrency(totalFinance) }}</span>
                     </div>
 
-                    <!-- Acerto de Contas -->
+                    <!-- Sumário de Rateio -->
                     <div v-if="selectedTrip.finance.length > 0" class="mt-6 p-5 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-4">
                         <h4 class="text-sm font-bold text-gray-500 uppercase flex items-center gap-2">
                             <i data-lucide="pie-chart" class="w-4 h-4 text-primary"></i> Acerto de Contas
@@ -198,22 +198,23 @@
                         
                         <div class="space-y-2 text-sm">
                             <div v-for="(total, person) in financeSummary.byPerson" :key="person" class="flex justify-between items-center">
-                                <span>{{ person }} pagou</span>
+                                <span class="text-gray-600 dark:text-gray-400">{{ person }} pagou</span>
                                 <span class="font-bold">{{ formatCurrency(total) }}</span>
                             </div>
                         </div>
 
-                        <div class="pt-4 border-t dark:border-gray-700 space-y-3">
+                        <div class="pt-4 border-t dark:border-gray-700 space-y-3 text-center">
+                            <p class="text-[10px] font-bold text-gray-400 uppercase">Transferências Sugeridas</p>
                             <div v-if="financeSummary.transfers.length > 0" class="space-y-2">
-                                <div v-for="t in financeSummary.transfers" :key="t.from + t.to" class="bg-primary/5 dark:bg-primary/10 p-3 rounded-xl border border-primary/10">
-                                    <p class="text-sm text-center">
+                                <div v-for="t in financeSummary.transfers" class="bg-primary/5 dark:bg-primary/10 p-3 rounded-xl border border-primary/10">
+                                    <p class="text-sm">
                                         <span class="font-bold text-primary">{{ t.from }}</span> deve transferir 
                                         <span class="font-bold text-primary">{{ formatCurrency(t.amount) }}</span> para 
                                         <span class="font-bold text-primary">{{ t.to }}</span>
                                     </p>
                                 </div>
                             </div>
-                            <div v-else class="text-sm text-center text-green-500 font-bold p-2 italic">
+                            <div v-else class="text-sm text-green-500 font-bold italic p-2">
                                 Tudo equilibrado!
                             </div>
                         </div>
@@ -226,10 +227,10 @@
                         <h3 class="font-bold text-lg">Programação</h3>
                         <button @click="openAddModal('itinerary')" class="bg-primary text-white p-2 rounded-lg"><i data-lucide="plus" class="w-4 h-4"></i></button>
                     </div>
-                    <div v-if="!selectedTrip.itinerary || selectedTrip.itinerary.length === 0" class="text-center py-8 text-gray-500 italic">Nenhum item.</div>
                     
                     <div v-for="(group, date) in groupedItinerary" :key="date" class="mb-6 relative pl-4 border-l-2 border-primary/30">
                         <div class="absolute w-3 h-3 bg-primary rounded-full -left-[7px] top-1 z-10"></div>
+                        
                         <div @click="toggleCollapse('itinerary', date)" class="flex items-center gap-2 mb-3 cursor-pointer hover:opacity-70 transition-opacity">
                             <h4 class="text-sm font-bold text-primary">{{ formatDate(date) }}</h4>
                             <i :data-lucide="isCollapsed('itinerary', date) ? 'chevron-right' : 'chevron-down'" class="w-3 h-3 text-primary/50"></i>
@@ -237,7 +238,7 @@
 
                         <div v-show="!isCollapsed('itinerary', date)" class="space-y-4 animate-fade-in">
                             <div v-for="item in group" :key="item.id" 
-                                :class="['bg-white dark:bg-gray-800 p-3 rounded-xl border dark:border-gray-700 flex justify-between items-start transition-all', item.done ? 'opacity-40 grayscale-[0.5]' : '']">
+                                :class="['bg-white dark:bg-gray-800 p-3 rounded-xl border dark:border-gray-700 flex justify-between items-start transition-all shadow-sm', item.done ? 'opacity-40 grayscale-[0.5]' : '']">
                                 <div class="flex gap-3 overflow-hidden">
                                     <input type="checkbox" v-model="item.done" class="mt-1 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary shrink-0 cursor-pointer">
                                     <div class="truncate">
@@ -259,10 +260,10 @@
                     </div>
                 </div>
 
-                <!-- Tab: Links -->
+                <!-- Outras Abas -->
                 <div v-if="currentTab === 'links'">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-lg">Links Úteis</h3>
+                        <h3 class="font-bold text-lg">Links</h3>
                         <button @click="openAddModal('links')" class="bg-primary text-white p-2 rounded-lg"><i data-lucide="plus" class="w-4 h-4"></i></button>
                     </div>
                     <div v-for="(links, type) in groupedLinks" :key="type" class="mb-4">
@@ -279,7 +280,6 @@
                     </div>
                 </div>
 
-                <!-- Tab: Documentos -->
                 <div v-if="currentTab === 'docs'">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-lg">Documentos</h3>
@@ -289,81 +289,78 @@
                         </label>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
-                        <div v-for="doc in selectedTrip.docs" :key="doc.id" @click="viewDocument(doc)" class="bg-white dark:bg-gray-800 p-2 rounded-xl border dark:border-gray-700 cursor-pointer hover:border-primary/50 transition-colors">
-                            <div class="h-28 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center mb-2 overflow-hidden">
+                        <div v-for="doc in selectedTrip.docs" :key="doc.id" @click="viewDocument(doc)" class="bg-white dark:bg-gray-800 p-2 rounded-xl border dark:border-gray-700 cursor-pointer">
+                            <div class="h-28 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center mb-2 overflow-hidden text-gray-400">
                                 <i v-if="doc.type.includes('pdf')" data-lucide="file-text" class="w-10 h-10 text-red-500"></i>
                                 <img v-else :src="doc.data" class="object-cover w-full h-full">
                             </div>
                             <div class="flex justify-between items-center px-1">
                                 <p class="text-[11px] font-bold truncate flex-grow">{{ doc.name }}</p>
-                                <button @click.stop="removeItem('docs', doc.id)" class="text-gray-400 hover:text-red-500 ml-1">
-                                    <i data-lucide="trash-2" class="w-3 h-3"></i>
-                                </button>
+                                <button @click.stop="removeItem('docs', doc.id)" class="text-red-500 ml-1"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Tab: Configurações -->
-                <div v-if="currentTab === 'settings'" class="animate-fade-in space-y-6">
-                    <h3 class="font-bold text-lg">Definições da Viagem</h3>
+                <div v-if="currentTab === 'settings'" class="space-y-6 animate-fade-in">
+                    <h3 class="font-bold text-lg">Configurações</h3>
                     
                     <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700 shadow-sm">
                         <h4 class="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                            <i data-lucide="users" class="w-4 h-4 text-primary"></i> Pessoas
+                            <i data-lucide="users" class="w-4 h-4"></i> Pessoas
                         </h4>
                         <div class="flex flex-wrap gap-2 mb-3">
                             <div v-for="(p, idx) in selectedTrip.people" :key="idx" class="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2">
-                                {{ p }} <button @click="removeListSetting('people', idx)" class="text-red-400"><i data-lucide="x" class="w-3 h-3"></i></button>
+                                {{ p }} <button @click="removeListSetting('people', idx)"><i data-lucide="x" class="w-3 h-3"></i></button>
                             </div>
                         </div>
                         <div class="flex gap-2">
-                            <input v-model="newSettingValue" @keyup.enter="addListSetting('people')" placeholder="Nova pessoa..." class="flex-grow bg-gray-50 dark:bg-gray-900 rounded-xl px-3 py-2 text-sm outline-none border focus:border-primary">
+                            <input v-model="newSettingValue" @keyup.enter="addListSetting('people')" placeholder="Nome..." class="flex-grow bg-gray-50 dark:bg-gray-900 rounded-xl px-3 py-2 text-sm outline-none border focus:border-primary">
                             <button @click="addListSetting('people')" class="bg-primary text-white p-2 rounded-xl"><i data-lucide="plus" class="w-4 h-4"></i></button>
                         </div>
                     </div>
 
                     <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700 shadow-sm">
                         <h4 class="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                            <i data-lucide="credit-card" class="w-4 h-4 text-primary"></i> Formas de Pagamento
+                            <i data-lucide="credit-card" class="w-4 h-4"></i> Pagamento
                         </h4>
                         <div class="flex flex-wrap gap-2 mb-3">
                             <div v-for="(p, idx) in selectedTrip.paymentMethods" :key="idx" class="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2">
-                                {{ p }} <button @click="removeListSetting('paymentMethods', idx)" class="text-red-400"><i data-lucide="x" class="w-3 h-3"></i></button>
+                                {{ p }} <button @click="removeListSetting('paymentMethods', idx)"><i data-lucide="x" class="w-3 h-3"></i></button>
                             </div>
                         </div>
                         <div class="flex gap-2">
-                            <input v-model="newPaymentValue" @keyup.enter="addListSetting('paymentMethods')" placeholder="Novo método..." class="flex-grow bg-gray-50 dark:bg-gray-900 rounded-xl px-3 py-2 text-sm outline-none border focus:border-primary">
+                            <input v-model="newPaymentValue" @keyup.enter="addListSetting('paymentMethods')" placeholder="Método..." class="flex-grow bg-gray-50 dark:bg-gray-900 rounded-xl px-3 py-2 text-sm outline-none border focus:border-primary">
                             <button @click="addListSetting('paymentMethods')" class="bg-primary text-white p-2 rounded-xl"><i data-lucide="plus" class="w-4 h-4"></i></button>
                         </div>
                     </div>
 
                     <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700 shadow-sm">
                         <h4 class="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                            <i data-lucide="tags" class="w-4 h-4 text-primary"></i> Tipos de Gasto
+                            <i data-lucide="tags" class="w-4 h-4"></i> Gastos
                         </h4>
                         <div class="flex flex-wrap gap-2 mb-3">
                             <div v-for="(p, idx) in selectedTrip.expenseTypes" :key="idx" class="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2">
-                                {{ p }} <button @click="removeListSetting('expenseTypes', idx)" class="text-red-400"><i data-lucide="x" class="w-3 h-3"></i></button>
+                                {{ p }} <button @click="removeListSetting('expenseTypes', idx)"><i data-lucide="x" class="w-3 h-3"></i></button>
                             </div>
                         </div>
                         <div class="flex gap-2">
-                            <input v-model="newExpenseValue" @keyup.enter="addListSetting('expenseTypes')" placeholder="Nova categoria..." class="flex-grow bg-gray-50 dark:bg-gray-900 rounded-xl px-3 py-2 text-sm outline-none border focus:border-primary">
+                            <input v-model="newExpenseValue" @keyup.enter="addListSetting('expenseTypes')" placeholder="Tipo..." class="flex-grow bg-gray-50 dark:bg-gray-900 rounded-xl px-3 py-2 text-sm outline-none border focus:border-primary">
                             <button @click="addListSetting('expenseTypes')" class="bg-primary text-white p-2 rounded-xl"><i data-lucide="plus" class="w-4 h-4"></i></button>
                         </div>
                     </div>
 
                     <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700 shadow-sm">
                         <h4 class="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                            <i data-lucide="link" class="w-4 h-4 text-primary"></i> Tipos de Link
+                            <i data-lucide="link" class="w-4 h-4 text-primary"></i> Links
                         </h4>
                         <div class="flex flex-wrap gap-2 mb-3">
                             <div v-for="(p, idx) in selectedTrip.linkTypes" :key="idx" class="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2">
-                                {{ p }} <button @click="removeListSetting('linkTypes', idx)" class="text-red-400"><i data-lucide="x" class="w-3 h-3"></i></button>
+                                {{ p }} <button @click="removeListSetting('linkTypes', idx)"><i data-lucide="x" class="w-3 h-3"></i></button>
                             </div>
                         </div>
                         <div class="flex gap-2">
-                            <input v-model="newLinkTypeValue" @keyup.enter="addListSetting('linkTypes')" placeholder="Novo tipo..." class="flex-grow bg-gray-50 dark:bg-gray-900 rounded-xl px-3 py-2 text-sm outline-none border focus:border-primary">
+                            <input v-model="newLinkTypeValue" @keyup.enter="addListSetting('linkTypes')" placeholder="Tipo link..." class="flex-grow bg-gray-50 dark:bg-gray-900 rounded-xl px-3 py-2 text-sm outline-none border focus:border-primary">
                             <button @click="addListSetting('linkTypes')" class="bg-primary text-white p-2 rounded-xl"><i data-lucide="plus" class="w-4 h-4"></i></button>
                         </div>
                     </div>
@@ -373,8 +370,8 @@
                             <i data-lucide="eye-off" class="w-4 h-4 text-primary"></i> Interface
                         </h4>
                         <label class="flex items-center gap-3 cursor-pointer group">
-                            <input type="checkbox" v-model="settings.hideDevButtons" class="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary">
-                            <span class="text-sm font-medium">Esconder os botões de dados de teste e excluir dados</span>
+                            <input type="checkbox" v-model="settings.hideDevButtons" class="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary transition-all">
+                            <span class="text-sm font-medium">Esconder botões de teste e exclusão global</span>
                         </label>
                     </div>
                 </div>
@@ -382,12 +379,12 @@
         </div>
     </main>
 
-    <!-- Modals -->
+    <!-- Modals (Trip, Item, Confirmation) -->
     <div v-if="showNewTripModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
         <div class="bg-white dark:bg-gray-800 w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-slide-up">
             <h3 class="text-xl font-bold mb-4">{{ isEditing ? 'Editar Viagem' : 'Nova Viagem' }}</h3>
             <div class="space-y-4">
-                <input v-model="formTrip.location" placeholder="Destino" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
+                <input v-model="formTrip.location" placeholder="Destino" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-primary">
                 <div class="flex gap-4">
                     <input v-model="formTrip.startDate" type="date" class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
                     <input v-model="formTrip.endDate" type="date" class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
@@ -429,9 +426,9 @@
                         <input v-model="formItem.date" type="date" class="flex-grow bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
                         <input v-model="formItem.time" type="time" class="w-28 bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
                     </div>
-                    <input v-model="formItem.link" placeholder="Link" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
+                    <input v-model="formItem.link" placeholder="Link (opcional)" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
                 </div>
-                <div v-if="activeAddModal === 'links'" class=" Strauss space-y-3">
+                <div v-if="activeAddModal === 'links'" class="space-y-3">
                     <input v-model="formItem.name" placeholder="Título" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
                     <input v-model="formItem.url" placeholder="URL" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
                     <select v-model="formItem.category" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
@@ -459,7 +456,7 @@
     </div>
 
     <div v-if="showClearConfirmStep1" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-gray-800 w-full max-w-xs rounded-3xl p-6 shadow-2xl text-center">
+        <div class="bg-white dark:bg-gray-800 w-full max-w-xs rounded-3xl p-6 shadow-2xl text-center animate-slide-up">
             <h3 class="text-lg font-bold mb-2">Limpar tudo?</h3>
             <div class="flex gap-2 mt-4">
                 <button @click="showClearConfirmStep1 = false" class="flex-1 py-3 text-gray-500 font-bold">Não</button>
@@ -469,17 +466,20 @@
     </div>
 
     <div v-if="showClearConfirmStep2" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-gray-800 w-full max-w-xs rounded-3xl p-6 shadow-2xl text-center border-4 border-red-500">
-            <h3 class="text-lg font-bold mb-2 text-red-600">CONFIRMAÇÃO FINAL!</h3>
-            <button @click="confirmClearAll" class="w-full bg-red-600 text-white py-4 rounded-xl font-black mt-4 uppercase">Apagar Definitivamente</button>
-            <button @click="showClearConfirmStep2 = false" class="w-full py-3 text-gray-500 font-bold mt-2">Voltar</button>
+        <div class="bg-white dark:bg-gray-800 w-full max-w-xs rounded-3xl p-6 shadow-2xl text-center border-4 border-red-500 animate-slide-up">
+            <h3 class="text-lg font-bold mb-2 text-red-600 font-black uppercase tracking-tighter">Confirmação Final!</h3>
+            <p class="text-xs font-bold text-gray-500 mb-6 uppercase tracking-widest">Essa ação NÃO pode ser desfeita.</p>
+            <div class="flex flex-col gap-2">
+                <button @click="confirmClearAll" class="w-full bg-red-600 text-white py-4 rounded-xl font-black">APAGAR DEFINITIVAMENTE</button>
+                <button @click="showClearConfirmStep2 = false" class="w-full py-3 text-gray-500 font-bold">VOLTAR</button>
+            </div>
         </div>
     </div>
 
     <!-- Visualizador de Documentos -->
-    <div v-if="viewingDoc" @click="viewingDoc = null" class="fixed inset-0 bg-black/95 z-[70] flex flex-col">
+    <div v-if="viewingDoc" @click="viewingDoc = null" class="fixed inset-0 bg-black/95 z-[70] flex flex-col animate-fade-in">
         <div class="p-4 flex justify-between items-center text-white">
-            <h4 class="font-bold truncate">{{ viewingDoc.name }}</h4>
+            <h4 class="font-bold truncate max-w-[80%]">{{ viewingDoc.name }}</h4>
             <button class="p-2"><i data-lucide="x"></i></button>
         </div>
         <div class="flex-grow flex items-center justify-center p-4 overflow-hidden">
@@ -539,6 +539,17 @@
                 const savedSet = localStorage.getItem('tripplanner_global_settings');
                 if (savedSet) settings.value = JSON.parse(savedSet);
 
+                const lastTripId = localStorage.getItem('tripplanner_last_trip_id');
+                const lastTab = localStorage.getItem('tripplanner_last_tab');
+                
+                if (lastTripId) {
+                    const trip = trips.value.find(t => t.id === lastTripId);
+                    if (trip) {
+                        selectedTrip.value = migrateTrip(trip);
+                        if (lastTab) currentTab.value = lastTab;
+                    }
+                }
+
                 const theme = localStorage.getItem('tripplanner_theme');
                 isDark.value = theme === 'dark' || (window.matchMedia('(prefers-color-scheme: dark)').matches && !theme);
                 applyTheme();
@@ -548,6 +559,13 @@
             watch(trips, (nv) => localStorage.setItem('tripplanner_trips_v3', JSON.stringify(nv)), { deep: true });
             watch(collapsedDays, (nv) => localStorage.setItem('tripplanner_collapsed_v1', JSON.stringify(nv)), { deep: true });
             watch(settings, (nv) => localStorage.setItem('tripplanner_global_settings', JSON.stringify(nv)), { deep: true });
+            
+            watch(selectedTrip, (nv) => {
+                if (nv) localStorage.setItem('tripplanner_last_trip_id', nv.id);
+                else localStorage.removeItem('tripplanner_last_trip_id');
+            });
+            watch(currentTab, (nv) => localStorage.setItem('tripplanner_last_tab', nv));
+
             watch([selectedTrip, currentTab, showNewTripModal, activeAddModal, viewingDoc, showConfirmTestData, showClearConfirmStep1, showClearConfirmStep2], () => nextTick(() => lucide.createIcons()));
 
             const toggleDarkMode = () => { isDark.value = !isDark.value; localStorage.setItem('tripplanner_theme', isDark.value ? 'dark' : 'light'); applyTheme(); };
@@ -563,7 +581,7 @@
             };
 
             const selectTrip = (trip) => selectedTrip.value = migrateTrip(trip);
-            const goHome = () => selectedTrip.value = null;
+            const goHome = () => { selectedTrip.value = null; localStorage.removeItem('tripplanner_last_trip_id'); };
 
             const saveTrip = () => {
                 if (!formTrip.value.location) return;
@@ -628,56 +646,55 @@
 
             const startClearData = () => showClearConfirmStep1.value = true;
             const goToClearStep2 = () => { showClearConfirmStep1.value = false; showClearConfirmStep2.value = true; };
-            const confirmClearAll = () => { trips.value = []; collapsedDays.value = {}; showClearConfirmStep2.value = false; alert('Limpo!'); };
+            const confirmClearAll = () => { trips.value = []; collapsedDays.value = {}; showClearConfirmStep2.value = false; alert('Dados limpos!'); };
 
             const handleTestData = () => { if (trips.value.length > 0) showConfirmTestData.value = true; else confirmTestData(); };
             const confirmTestData = () => {
                 const now = new Date();
                 const f = (d) => { const x = new Date(now); x.setDate(x.getDate() + d); return x.toISOString().split('T')[0]; };
-
                 trips.value = [
                     migrateTrip({
-                        id: 'nyc-real', location: 'Nova York, EUA', startDate: f(30), endDate: f(40), people: ["Daniel", "Dina"],
+                        id: 'nyc-trip', location: 'Nova York, EUA', startDate: f(30), endDate: f(40), people: ["Daniel", "Dina"],
                         finance: [
                             { id: 'f1', name: 'Passagens Delta', value: 4200, date: f(30), paidBy: 'Daniel', method: 'Cartão', type: 'Passagens' },
-                            { id: 'f2', name: 'Hotel Marriott Times Sq', value: 8500, date: f(30), paidBy: 'Dina', method: 'Cartão', type: 'Hospedagem' },
-                            { id: 'f3', name: 'Jantar Keens Steakhouse', value: 650, date: f(31), paidBy: 'Daniel', method: 'Cartão', type: 'Alimentação' },
+                            { id: 'f2', name: 'Marriott Times Square', value: 8500, date: f(30), paidBy: 'Dina', method: 'Cartão', type: 'Hospedagem' },
+                            { id: 'f3', name: 'Keens Steakhouse', value: 650, date: f(31), paidBy: 'Daniel', method: 'Cartão', type: 'Alimentação' },
                             { id: 'f4', name: 'MetroCard Ilimitado', value: 180, date: f(31), paidBy: 'Daniel', method: 'Dinheiro', type: 'Transporte' },
-                            { id: 'f5', name: 'Ingresso Edge', value: 220, date: f(32), paidBy: 'Dina', method: 'Pix', type: 'Turismo' },
-                            { id: 'f6', name: 'Compras Apple Store', value: 5500, date: f(33), paidBy: 'Daniel', method: 'Cartão', type: 'Compras' },
-                            { id: 'f7', name: 'Almoço Shake Shack', value: 120, date: f(33), paidBy: 'Dina', method: 'Dinheiro', type: 'Alimentação' },
-                            { id: 'f8', name: 'Show Lion King Broadway', value: 950, date: f(34), paidBy: 'Daniel', method: 'Cartão', type: 'Lazer' },
+                            { id: 'f5', name: 'Edge Observatory', value: 220, date: f(32), paidBy: 'Dina', method: 'Pix', type: 'Turismo' },
+                            { id: 'f6', name: 'Apple Store Shopping', value: 5500, date: f(33), paidBy: 'Daniel', method: 'Cartão', type: 'Compras' },
+                            { id: 'f7', name: 'Shake Shack', value: 120, date: f(33), paidBy: 'Dina', method: 'Dinheiro', type: 'Alimentação' },
+                            { id: 'f8', name: 'Broadway Show', value: 950, date: f(34), paidBy: 'Daniel', method: 'Cartão', type: 'Lazer' },
                             { id: 'f9', name: 'Seguro Allianz', value: 450, date: f(30), paidBy: 'Dina', method: 'Pix', type: 'Saúde' },
                             { id: 'f10', name: 'Uber JFK', value: 350, date: f(40), paidBy: 'Daniel', method: 'Dinheiro', type: 'Transporte' }
                         ],
                         itinerary: [
                             { id: 'i1', name: 'Voo GRU -> JFK', date: f(30), time: '22:00', done: true },
                             { id: 'i2', name: 'Check-in Hotel', date: f(31), time: '14:00', done: false },
-                            { id: 'i3', name: 'Central Park Walk', date: f(31), time: '16:30', done: false },
+                            { id: 'i3', name: 'Central Park', date: f(31), time: '16:30', done: false },
                             { id: 'i4', name: 'Museu História Natural', date: f(32), time: '10:00', done: false },
                             { id: 'i5', name: 'High Line Sunset', date: f(32), time: '18:00', done: false },
                             { id: 'i6', name: '5th Ave Shopping', date: f(33), time: '10:00', done: false },
                             { id: 'i7', name: 'Statue of Liberty', date: f(34), time: '09:00', done: false },
                             { id: 'i8', name: '9/11 Memorial', date: f(34), time: '14:00', done: false },
                             { id: 'i9', name: 'Brooklyn Bridge', date: f(35), time: '17:00', done: false },
-                            { id: 'i10', name: 'Voo Retorno JFK', date: f(40), time: '20:00', done: false }
+                            { id: 'i10', name: 'Voo JFK -> GRU', date: f(40), time: '20:00', done: false }
                         ],
                         links: [
                             { id: 'l1', name: 'Marriott Voucher', url: 'https://marriott.com', category: 'Reservas' },
-                            { id: 'l2', name: 'Bilhete Delta', url: 'https://delta.com', category: 'Transporte' },
-                            { id: 'l3', name: 'Eater NYC Guide', url: 'https://eater.com', category: 'Dicas' },
-                            { id: 'l4', name: 'CityPASS', url: 'https://citypass.com', category: 'Ingressos' },
-                            { id: 'l5', name: 'Mapa do Metrô', url: 'https://mta.info', category: 'Mapas' },
+                            { id: 'l2', name: 'Bilhete Aéreo', url: 'https://delta.com', category: 'Transporte' },
+                            { id: 'l3', name: 'Guia Eater NYC', url: 'https://eater.com', category: 'Dicas' },
+                            { id: 'l4', name: 'CityPASS Ingressos', url: 'https://citypass.com', category: 'Ingressos' },
+                            { id: 'l5', name: 'Mapa Metrô', url: 'https://mta.info', category: 'Mapas' },
                             { id: 'l6', name: 'Tickets Broadway', url: 'https://broadway.com', category: 'Reservas' },
-                            { id: 'l7', name: 'TimeOut Events', url: 'https://timeout.com', category: 'Dicas' },
-                            { id: 'l8', name: 'Localização Outlet', url: 'https://maps.google.com', category: 'Mapas' },
-                            { id: 'l9', name: 'Apólice Seguro', url: 'https://allianz.com', category: 'Dicas' },
+                            { id: 'l7', name: 'TimeOut NY', url: 'https://timeout.com', category: 'Dicas' },
+                            { id: 'l8', name: 'Woodbury Outlet', url: 'https://maps.google.com', category: 'Mapas' },
+                            { id: 'l9', name: 'Apólice Allianz', url: 'https://allianz.com', category: 'Dicas' },
                             { id: 'l10', name: 'Tempo NYC', url: 'https://accuweather.com', category: 'Dicas' }
                         ],
                         docs: []
                     }),
                     migrateTrip({
-                        id: 'lisboa-real', location: 'Lisboa, Portugal', startDate: f(100), endDate: f(110), people: ["Daniel", "Dina"],
+                        id: 'lisboa-trip', location: 'Lisboa, Portugal', startDate: f(100), endDate: f(110), people: ["Daniel", "Dina"],
                         finance: [
                             { id: 'f11', name: 'Voo TAP', value: 3800, date: f(100), paidBy: 'Dina', method: 'Cartão', type: 'Passagens' },
                             { id: 'f12', name: 'Airbnb Alfama', value: 2900, date: f(100), paidBy: 'Daniel', method: 'Cartão', type: 'Hospedagem' },
@@ -685,34 +702,34 @@
                             { id: 'f14', name: 'Car Rental', value: 1200, date: f(102), paidBy: 'Daniel', method: 'Cartão', type: 'Transporte' },
                             { id: 'f15', name: 'Castelo S. Jorge', value: 80, date: f(102), paidBy: 'Dina', method: 'Dinheiro', type: 'Turismo' },
                             { id: 'f16', name: 'Vinhos Alentejo', value: 450, date: f(103), paidBy: 'Daniel', method: 'Pix', type: 'Compras' },
-                            { id: 'f17', name: 'Pastéis Belém', value: 60, date: f(104), paidBy: 'Dina', method: 'Dinheiro', type: 'Alimentação' },
-                            { id: 'f18', name: 'Show de Fado', value: 300, date: f(104), paidBy: 'Daniel', method: 'Cartão', type: 'Lazer' },
+                            { id: 'f17', name: 'Pastéis de Belém', value: 60, date: f(104), paidBy: 'Dina', method: 'Dinheiro', type: 'Alimentação' },
+                            { id: 'f18', name: 'Fado Show', value: 300, date: f(104), paidBy: 'Daniel', method: 'Cartão', type: 'Lazer' },
                             { id: 'f19', name: 'Trem Sintra', value: 45, date: f(105), paidBy: 'Dina', method: 'Dinheiro', type: 'Transporte' },
                             { id: 'f20', name: 'Farmácia', value: 90, date: f(105), paidBy: 'Daniel', method: 'Pix', type: 'Saúde' }
                         ],
                         itinerary: [
                             { id: 'i11', name: 'Chegada LIS', date: f(100), time: '08:00', done: true },
                             { id: 'i12', name: 'Walk Alfama', date: f(101), time: '10:00', done: true },
-                            { id: 'i13', name: 'Sra Monte View', date: f(101), time: '17:30', done: false },
+                            { id: 'i13', name: 'Miradouro Sra Monte', date: f(101), time: '17:30', done: false },
                             { id: 'i14', name: 'LX Factory', date: f(102), time: '15:00', done: false },
-                            { id: 'i15', name: 'Torre de Belém', date: f(103), time: '10:00', done: false },
+                            { id: 'i15', name: 'Torre Belem', date: f(103), time: '10:00', done: false },
                             { id: 'i16', name: 'Jerónimos', date: f(103), time: '14:00', done: false },
-                            { id: 'i17', name: 'Cascais Trip', date: f(104), time: '09:00', done: false },
-                            { id: 'i18', name: 'Pena Palace', date: f(105), time: '10:00', done: false },
-                            { id: 'i19', name: 'Regaleira', date: f(105), time: '14:30', done: false },
-                            { id: 'i20', name: 'Voo Retorno', date: f(110), time: '11:00', done: false }
+                            { id: 'i17', name: 'Cascais Day Trip', date: f(104), time: '09:00', done: false },
+                            { id: 'i18', name: 'Sintra Palace', date: f(105), time: '10:00', done: false },
+                            { id: 'i19', name: 'Quinta Regaleira', date: f(105), time: '14:30', done: false },
+                            { id: 'i20', name: 'Retorno LIS', date: f(110), time: '11:00', done: false }
                         ],
                         links: [
                             { id: 'l11', name: 'Airbnb Voucher', url: 'https://airbnb.com', category: 'Reservas' },
                             { id: 'l12', name: 'TAP Checkin', url: 'https://flytap.com', category: 'Transporte' },
-                            { id: 'l13', name: 'CP Comboios', url: 'https://cp.pt', category: 'Transporte' },
-                            { id: 'l14', name: 'Lisboa Guide', url: 'https://lisboa.com', category: 'Dicas' },
-                            { id: 'l15', name: 'Miradouros Map', url: 'https://google.com', category: 'Mapas' },
-                            { id: 'l16', name: 'Pastéis Belém', url: 'https://pasteisdebelem.pt', category: 'Dicas' },
+                            { id: 'l13', name: 'Comboios Portugal', url: 'https://cp.pt', category: 'Transporte' },
+                            { id: 'l14', name: 'Guide Lisboa', url: 'https://lisboa.com', category: 'Dicas' },
+                            { id: 'l15', name: 'Maps Viewpoints', url: 'https://google.com', category: 'Mapas' },
+                            { id: 'l16', name: 'Pasteis Belem Site', url: 'https://pasteisdebelem.pt', category: 'Dicas' },
                             { id: 'l17', name: 'Sintra Tickets', url: 'https://parquesdesintra.pt', category: 'Ingressos' },
-                            { id: 'l18', name: 'TimeOut Lisboa', url: 'https://timeout.pt', category: 'Dicas' },
+                            { id: 'l18', name: 'TimeOut LIS', url: 'https://timeout.pt', category: 'Dicas' },
                             { id: 'l19', name: 'Walking Tour', url: 'https://freetour.com', category: 'Dicas' },
-                            { id: 'l20', name: 'LX Factory Map', url: 'https://lxfactory.com', category: 'Mapas' }
+                            { id: 'l20', name: 'Map LX Factory', url: 'https://lxfactory.com', category: 'Mapas' }
                         ],
                         docs: []
                     })
@@ -742,7 +759,7 @@
                 selectedTrip.value.people.forEach(p => totals[p] = 0);
                 let gt = 0;
                 selectedTrip.value.finance.forEach(i => { if (totals[i.paidBy] !== undefined) { const v = Number(i.value || 0); totals[i.paidBy] += v; gt += v; } });
-                const fair = gt / selectedTrip.value.people.length;
+                const fair = gt / (selectedTrip.value.people.length || 1);
                 let balances = selectedTrip.value.people.map(p => ({ name: p, amount: totals[p] - fair }));
                 const trans = [];
                 let ds = balances.filter(b => b.amount < -0.01).sort((a,b) => a.amount - b.amount);
