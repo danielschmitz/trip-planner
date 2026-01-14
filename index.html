@@ -107,7 +107,8 @@
                 </div>
             </div>
 
-            <div class="mt-auto pt-6 border-t dark:border-gray-800 space-y-3">
+            <!-- Footer Buttons -->
+            <div v-if="!settings.hideDevButtons" class="mt-auto pt-6 border-t dark:border-gray-800 space-y-3 animate-fade-in">
                 <button @click="handleTestData" class="w-full py-4 px-4 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold text-gray-600 dark:text-gray-400 transition-all border border-transparent active:scale-95">
                     <i data-lucide="database" class="w-4 h-4"></i>
                     {{ trips.length > 0 ? 'Substituir por Dados de Teste' : 'Incluir Dados de Teste' }}
@@ -116,7 +117,6 @@
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                     Limpar Todos os Dados
                 </button>
-                <p class="text-center text-[10px] text-gray-400 uppercase tracking-widest font-semibold">Configurações globais</p>
             </div>
         </div>
 
@@ -143,6 +143,7 @@
                         <h3 class="font-bold text-lg">Gastos</h3>
                         <button @click="openAddModal('finance')" class="bg-primary text-white p-2 rounded-lg"><i data-lucide="plus" class="w-4 h-4"></i></button>
                     </div>
+                    
                     <div v-if="!selectedTrip.finance || selectedTrip.finance.length === 0" class="text-center py-8 text-gray-500 italic">Nenhum gasto.</div>
                     
                     <div v-for="(group, date) in groupedFinance" :key="date" class="mb-4">
@@ -189,21 +190,20 @@
                         <span class="text-xl font-black">{{ formatCurrency(totalFinance) }}</span>
                     </div>
 
+                    <!-- Acerto de Contas -->
                     <div v-if="selectedTrip.finance.length > 0" class="mt-6 p-5 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-4">
                         <h4 class="text-sm font-bold text-gray-500 uppercase flex items-center gap-2">
-                            <i data-lucide="pie-chart" class="w-4 h-4 text-primary"></i> Acerto de Contas (Divisão Igual)
+                            <i data-lucide="pie-chart" class="w-4 h-4 text-primary"></i> Acerto de Contas
                         </h4>
                         
-                        <div class="space-y-2">
-                            <div v-for="(total, person) in financeSummary.byPerson" :key="person" class="flex justify-between items-center text-sm">
-                                <span class="font-medium text-gray-600 dark:text-gray-400">{{ person }} pagou</span>
+                        <div class="space-y-2 text-sm">
+                            <div v-for="(total, person) in financeSummary.byPerson" :key="person" class="flex justify-between items-center">
+                                <span>{{ person }} pagou</span>
                                 <span class="font-bold">{{ formatCurrency(total) }}</span>
                             </div>
                         </div>
 
                         <div class="pt-4 border-t dark:border-gray-700 space-y-3">
-                            <p class="text-[10px] font-bold text-gray-400 uppercase text-center mb-2">Transferências Sugeridas</p>
-                            
                             <div v-if="financeSummary.transfers.length > 0" class="space-y-2">
                                 <div v-for="t in financeSummary.transfers" :key="t.from + t.to" class="bg-primary/5 dark:bg-primary/10 p-3 rounded-xl border border-primary/10">
                                     <p class="text-sm text-center">
@@ -214,7 +214,7 @@
                                 </div>
                             </div>
                             <div v-else class="text-sm text-center text-green-500 font-bold p-2 italic">
-                                Tudo equilibrado entre todos!
+                                Tudo equilibrado!
                             </div>
                         </div>
                     </div>
@@ -230,7 +230,6 @@
                     
                     <div v-for="(group, date) in groupedItinerary" :key="date" class="mb-6 relative pl-4 border-l-2 border-primary/30">
                         <div class="absolute w-3 h-3 bg-primary rounded-full -left-[7px] top-1 z-10"></div>
-                        
                         <div @click="toggleCollapse('itinerary', date)" class="flex items-center gap-2 mb-3 cursor-pointer hover:opacity-70 transition-opacity">
                             <h4 class="text-sm font-bold text-primary">{{ formatDate(date) }}</h4>
                             <i :data-lucide="isCollapsed('itinerary', date) ? 'chevron-right' : 'chevron-down'" class="w-3 h-3 text-primary/50"></i>
@@ -241,7 +240,6 @@
                                 :class="['bg-white dark:bg-gray-800 p-3 rounded-xl border dark:border-gray-700 flex justify-between items-start transition-all', item.done ? 'opacity-40 grayscale-[0.5]' : '']">
                                 <div class="flex gap-3 overflow-hidden">
                                     <input type="checkbox" v-model="item.done" class="mt-1 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary shrink-0 cursor-pointer">
-                                    
                                     <div class="truncate">
                                         <div class="flex items-center gap-2">
                                             <span class="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded shrink-0">{{ item.time }}</span>
@@ -275,10 +273,7 @@
                                     <i data-lucide="link-2" class="w-4 h-4 text-blue-500"></i>
                                     <span class="text-sm font-medium truncate">{{ link.name }}</span>
                                 </a>
-                                <div class="flex gap-1">
-                                    <button @click="openEditItem('links', link)" class="p-1 text-gray-400 hover:text-primary"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
-                                    <button @click="removeItem('links', link.id)" class="p-1 text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
-                                </div>
+                                <button @click="removeItem('links', link.id)" class="p-1 text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                             </div>
                         </div>
                     </div>
@@ -293,7 +288,6 @@
                             <input type="file" class="hidden" @change="handleDocSelection" accept="image/*,application/pdf">
                         </label>
                     </div>
-                    <div v-if="!selectedTrip.docs || selectedTrip.docs.length === 0" class="text-center py-8 text-gray-500 italic">Nenhum documento.</div>
                     <div class="grid grid-cols-2 gap-3">
                         <div v-for="doc in selectedTrip.docs" :key="doc.id" @click="viewDocument(doc)" class="bg-white dark:bg-gray-800 p-2 rounded-xl border dark:border-gray-700 cursor-pointer hover:border-primary/50 transition-colors">
                             <div class="h-28 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center mb-2 overflow-hidden">
@@ -314,15 +308,13 @@
                 <div v-if="currentTab === 'settings'" class="animate-fade-in space-y-6">
                     <h3 class="font-bold text-lg">Definições da Viagem</h3>
                     
-                    <!-- Pessoas -->
                     <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700 shadow-sm">
                         <h4 class="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                            <i data-lucide="users" class="w-4 h-4"></i> Pessoas
+                            <i data-lucide="users" class="w-4 h-4 text-primary"></i> Pessoas
                         </h4>
                         <div class="flex flex-wrap gap-2 mb-3">
                             <div v-for="(p, idx) in selectedTrip.people" :key="idx" class="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2">
-                                {{ p }}
-                                <button @click="removeListSetting('people', idx)" class="text-gray-400 hover:text-red-500"><i data-lucide="x" class="w-3 h-3"></i></button>
+                                {{ p }} <button @click="removeListSetting('people', idx)" class="text-red-400"><i data-lucide="x" class="w-3 h-3"></i></button>
                             </div>
                         </div>
                         <div class="flex gap-2">
@@ -331,15 +323,13 @@
                         </div>
                     </div>
 
-                    <!-- Formas de Pagamento -->
                     <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700 shadow-sm">
                         <h4 class="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                            <i data-lucide="credit-card" class="w-4 h-4"></i> Formas de Pagamento
+                            <i data-lucide="credit-card" class="w-4 h-4 text-primary"></i> Formas de Pagamento
                         </h4>
                         <div class="flex flex-wrap gap-2 mb-3">
                             <div v-for="(p, idx) in selectedTrip.paymentMethods" :key="idx" class="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2">
-                                {{ p }}
-                                <button @click="removeListSetting('paymentMethods', idx)" class="text-gray-400 hover:text-red-500"><i data-lucide="x" class="w-3 h-3"></i></button>
+                                {{ p }} <button @click="removeListSetting('paymentMethods', idx)" class="text-red-400"><i data-lucide="x" class="w-3 h-3"></i></button>
                             </div>
                         </div>
                         <div class="flex gap-2">
@@ -348,15 +338,13 @@
                         </div>
                     </div>
 
-                    <!-- Tipos de Gasto -->
                     <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700 shadow-sm">
                         <h4 class="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                            <i data-lucide="tags" class="w-4 h-4"></i> Tipos de Gasto
+                            <i data-lucide="tags" class="w-4 h-4 text-primary"></i> Tipos de Gasto
                         </h4>
                         <div class="flex flex-wrap gap-2 mb-3">
                             <div v-for="(p, idx) in selectedTrip.expenseTypes" :key="idx" class="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2">
-                                {{ p }}
-                                <button @click="removeListSetting('expenseTypes', idx)" class="text-gray-400 hover:text-red-500"><i data-lucide="x" class="w-3 h-3"></i></button>
+                                {{ p }} <button @click="removeListSetting('expenseTypes', idx)" class="text-red-400"><i data-lucide="x" class="w-3 h-3"></i></button>
                             </div>
                         </div>
                         <div class="flex gap-2">
@@ -365,15 +353,13 @@
                         </div>
                     </div>
 
-                    <!-- Tipos de Link -->
                     <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700 shadow-sm">
                         <h4 class="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                            <i data-lucide="link" class="w-4 h-4"></i> Tipos de Link
+                            <i data-lucide="link" class="w-4 h-4 text-primary"></i> Tipos de Link
                         </h4>
                         <div class="flex flex-wrap gap-2 mb-3">
                             <div v-for="(p, idx) in selectedTrip.linkTypes" :key="idx" class="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2">
-                                {{ p }}
-                                <button @click="removeListSetting('linkTypes', idx)" class="text-gray-400 hover:text-red-500"><i data-lucide="x" class="w-3 h-3"></i></button>
+                                {{ p }} <button @click="removeListSetting('linkTypes', idx)" class="text-red-400"><i data-lucide="x" class="w-3 h-3"></i></button>
                             </div>
                         </div>
                         <div class="flex gap-2">
@@ -381,30 +367,30 @@
                             <button @click="addListSetting('linkTypes')" class="bg-primary text-white p-2 rounded-xl"><i data-lucide="plus" class="w-4 h-4"></i></button>
                         </div>
                     </div>
-                </div>
 
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700 shadow-sm">
+                        <h4 class="text-sm font-bold text-gray-500 uppercase mb-4 flex items-center gap-2">
+                            <i data-lucide="eye-off" class="w-4 h-4 text-primary"></i> Interface
+                        </h4>
+                        <label class="flex items-center gap-3 cursor-pointer group">
+                            <input type="checkbox" v-model="settings.hideDevButtons" class="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary">
+                            <span class="text-sm font-medium">Esconder os botões de dados de teste e excluir dados</span>
+                        </label>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
 
-    <!-- Modals (Trip, Items, Confirmations, etc) -->
+    <!-- Modals -->
     <div v-if="showNewTripModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
         <div class="bg-white dark:bg-gray-800 w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-slide-up">
             <h3 class="text-xl font-bold mb-4">{{ isEditing ? 'Editar Viagem' : 'Nova Viagem' }}</h3>
             <div class="space-y-4">
-                <div>
-                    <label class="text-xs font-bold text-gray-500 uppercase">Destino</label>
-                    <input v-model="formTrip.location" type="text" placeholder="Ex: Roma, Itália" class="w-full bg-gray-100 dark:bg-gray-700 border-none rounded-xl p-3 mt-1 outline-none ring-primary focus:ring-2">
-                </div>
+                <input v-model="formTrip.location" placeholder="Destino" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
                 <div class="flex gap-4">
-                    <div class="flex-1">
-                        <label class="text-xs font-bold text-gray-500 uppercase">Início</label>
-                        <input v-model="formTrip.startDate" type="date" class="w-full bg-gray-100 dark:bg-gray-700 border-none rounded-xl p-3 mt-1 text-sm outline-none">
-                    </div>
-                    <div class="flex-1">
-                        <label class="text-xs font-bold text-gray-500 uppercase">Fim</label>
-                        <input v-model="formTrip.endDate" type="date" class="w-full bg-gray-100 dark:bg-gray-700 border-none rounded-xl p-3 mt-1 text-sm outline-none">
-                    </div>
+                    <input v-model="formTrip.startDate" type="date" class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
+                    <input v-model="formTrip.endDate" type="date" class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
                 </div>
                 <div class="flex gap-2 pt-4">
                     <button @click="closeTripModal" class="flex-1 py-3 text-gray-500 font-bold">Cancelar</button>
@@ -414,60 +400,44 @@
         </div>
     </div>
 
-    <!-- Modal: Adicionar/Editar Item (Finance, Itinerary, Link) -->
+    <!-- Modal Item -->
     <div v-if="activeAddModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
         <div class="bg-white dark:bg-gray-800 w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-slide-up">
             <h3 class="text-xl font-bold mb-4">{{ isEditing ? 'Editar' : 'Adicionar' }} {{ getModalTitle }}</h3>
             <div class="space-y-4">
-                
                 <div v-if="activeAddModal === 'finance'" class="space-y-3">
                     <input v-model="formItem.name" placeholder="Nome do gasto" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
                     <div class="flex gap-2">
                         <input v-model.number="formItem.value" type="number" placeholder="Valor" class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
                         <input v-model="formItem.date" type="date" class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
                     </div>
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase ml-2">Quem Pagou?</label>
-                        <select v-model="formItem.paidBy" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none mt-1">
-                            <option v-for="person in selectedTrip.people" :key="person" :value="person">{{ person }}</option>
+                    <select v-model="formItem.paidBy" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none mt-1">
+                        <option v-for="person in selectedTrip.people" :key="person" :value="person">{{ person }}</option>
+                    </select>
+                    <div class="grid grid-cols-2 gap-2">
+                        <select v-model="formItem.method" class="bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
+                            <option v-for="m in selectedTrip.paymentMethods" :key="m" :value="m">{{ m }}</option>
+                        </select>
+                        <select v-model="formItem.type" class="bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
+                            <option v-for="t in selectedTrip.expenseTypes" :key="t" :value="t">{{ t }}</option>
                         </select>
                     </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="text-[10px] font-bold text-gray-400 uppercase ml-2">Pagamento</label>
-                            <select v-model="formItem.method" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none mt-1">
-                                <option v-for="m in selectedTrip.paymentMethods" :key="m" :value="m">{{ m }}</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-gray-400 uppercase ml-2">Categoria</label>
-                            <select v-model="formItem.type" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none mt-1">
-                                <option v-for="t in selectedTrip.expenseTypes" :key="t" :value="t">{{ t }}</option>
-                            </select>
-                        </div>
-                    </div>
                 </div>
-
                 <div v-if="activeAddModal === 'itinerary'" class="space-y-3">
-                    <input v-model="formItem.name" placeholder="Atividade ou lugar" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
+                    <input v-model="formItem.name" placeholder="Lugar" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
                     <div class="flex gap-2">
                         <input v-model="formItem.date" type="date" class="flex-grow bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
                         <input v-model="formItem.time" type="time" class="w-28 bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
                     </div>
-                    <input v-model="formItem.link" placeholder="Link (Google Maps, Site)" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
+                    <input v-model="formItem.link" placeholder="Link" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
                 </div>
-
-                <div v-if="activeAddModal === 'links'" class="space-y-3">
-                    <input v-model="formItem.name" placeholder="Título do link" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
-                    <input v-model="formItem.url" placeholder="https://..." class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
-                    <div>
-                        <label class="text-[10px] font-bold text-gray-400 uppercase ml-2">Categoria</label>
-                        <select v-model="formItem.category" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none mt-1">
-                            <option v-for="cat in selectedTrip.linkTypes" :key="cat" :value="cat">{{ cat }}</option>
-                        </select>
-                    </div>
+                <div v-if="activeAddModal === 'links'" class=" Strauss space-y-3">
+                    <input v-model="formItem.name" placeholder="Título" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
+                    <input v-model="formItem.url" placeholder="URL" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
+                    <select v-model="formItem.category" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
+                        <option v-for="cat in selectedTrip.linkTypes" :key="cat" :value="cat">{{ cat }}</option>
+                    </select>
                 </div>
-
                 <div class="flex gap-2 pt-4">
                     <button @click="activeAddModal = null" class="flex-1 py-3 text-gray-500 font-bold">Cancelar</button>
                     <button @click="saveItem" class="flex-1 bg-primary text-white py-3 rounded-xl font-bold">{{ isEditing ? 'Salvar' : 'Adicionar' }}</button>
@@ -476,60 +446,45 @@
         </div>
     </div>
 
-    <!-- Confirm Modal p/ Dados de Teste -->
+    <!-- Modals de Confirmação -->
     <div v-if="showConfirmTestData" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-gray-800 w-full max-w-xs rounded-3xl p-6 shadow-2xl animate-slide-up text-center">
-            <div class="w-16 h-16 bg-orange-100 dark:bg-orange-900/30 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i data-lucide="alert-triangle" class="w-8 h-8"></i>
-            </div>
+        <div class="bg-white dark:bg-gray-800 w-full max-w-xs rounded-3xl p-6 shadow-2xl text-center">
             <h3 class="text-lg font-bold mb-2">Substituir Dados?</h3>
-            <p class="text-sm text-gray-500 mb-6">Esta ação apagará todas as suas viagens atuais para incluir os dados de teste.</p>
+            <p class="text-sm text-gray-500 mb-6">Esta ação apagará todas as suas viagens atuais.</p>
             <div class="flex gap-2">
                 <button @click="showConfirmTestData = false" class="flex-1 py-3 text-gray-500 font-bold">Cancelar</button>
-                <button @click="confirmTestData" class="flex-1 bg-primary text-white py-3 rounded-xl font-bold">Sim, Substituir</button>
+                <button @click="confirmTestData" class="flex-1 bg-primary text-white py-3 rounded-xl font-bold">Sim</button>
             </div>
         </div>
     </div>
 
-    <!-- Confirm Modal: Limpar Dados Step 1 -->
     <div v-if="showClearConfirmStep1" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-gray-800 w-full max-w-xs rounded-3xl p-6 shadow-2xl animate-slide-up text-center">
-            <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i data-lucide="help-circle" class="w-8 h-8"></i>
-            </div>
+        <div class="bg-white dark:bg-gray-800 w-full max-w-xs rounded-3xl p-6 shadow-2xl text-center">
             <h3 class="text-lg font-bold mb-2">Limpar tudo?</h3>
-            <p class="text-sm text-gray-500 mb-6">Você deseja remover todas as viagens e configurações salvas?</p>
-            <div class="flex gap-2">
-                <button @click="showClearConfirmStep1 = false" class="flex-1 py-3 text-gray-500 font-bold">Não, Cancelar</button>
-                <button @click="goToClearStep2" class="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold">Sim, Próximo</button>
+            <div class="flex gap-2 mt-4">
+                <button @click="showClearConfirmStep1 = false" class="flex-1 py-3 text-gray-500 font-bold">Não</button>
+                <button @click="goToClearStep2" class="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold">Sim</button>
             </div>
         </div>
     </div>
 
-    <!-- Confirm Modal: Limpar Dados Step 2 -->
     <div v-if="showClearConfirmStep2" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-gray-800 w-full max-w-xs rounded-3xl p-6 shadow-2xl animate-slide-up text-center border-4 border-red-500">
-            <div class="w-16 h-16 bg-red-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-                <i data-lucide="alert-octagon" class="w-8 h-8"></i>
-            </div>
-            <h3 class="text-lg font-bold mb-2 text-red-600">Confirmação Final!</h3>
-            <p class="text-sm text-gray-500 mb-6 font-bold uppercase">Esta ação NÃO PODE ser desfeita. Todos os seus dados serão permanentemente apagados.</p>
-            <div class="flex flex-col gap-2">
-                <button @click="confirmClearAll" class="w-full bg-red-600 text-white py-4 rounded-xl font-black shadow-lg shadow-red-500/30">APAGAR DEFINITIVAMENTE</button>
-                <button @click="showClearConfirmStep2 = false" class="w-full py-3 text-gray-500 font-bold">DESISTIR E VOLTAR</button>
-            </div>
+        <div class="bg-white dark:bg-gray-800 w-full max-w-xs rounded-3xl p-6 shadow-2xl text-center border-4 border-red-500">
+            <h3 class="text-lg font-bold mb-2 text-red-600">CONFIRMAÇÃO FINAL!</h3>
+            <button @click="confirmClearAll" class="w-full bg-red-600 text-white py-4 rounded-xl font-black mt-4 uppercase">Apagar Definitivamente</button>
+            <button @click="showClearConfirmStep2 = false" class="w-full py-3 text-gray-500 font-bold mt-2">Voltar</button>
         </div>
     </div>
 
     <!-- Visualizador de Documentos -->
-    <div v-if="viewingDoc" @click="viewingDoc = null" class="fixed inset-0 bg-black/95 z-[70] flex flex-col animate-fade-in">
+    <div v-if="viewingDoc" @click="viewingDoc = null" class="fixed inset-0 bg-black/95 z-[70] flex flex-col">
         <div class="p-4 flex justify-between items-center text-white">
-            <h4 class="font-bold truncate max-w-[80%]">{{ viewingDoc.name }}</h4>
-            <button class="p-2 bg-white/10 rounded-full"><i data-lucide="x"></i></button>
+            <h4 class="font-bold truncate">{{ viewingDoc.name }}</h4>
+            <button class="p-2"><i data-lucide="x"></i></button>
         </div>
         <div class="flex-grow flex items-center justify-center p-4 overflow-hidden">
             <iframe v-if="viewingDoc.type.includes('pdf')" :src="viewingDoc.data" class="w-full h-full rounded-lg border-none bg-white"></iframe>
-            <img v-else :src="viewingDoc.data" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl">
+            <img v-else :src="viewingDoc.data" class="max-w-full max-h-full object-contain">
         </div>
     </div>
 </div>
@@ -544,7 +499,8 @@
             const currentTab = ref('finance');
             const isDark = ref(false);
             const isEditing = ref(false);
-            
+            const settings = ref({ hideDevButtons: false });
+
             const newSettingValue = ref('');
             const newPaymentValue = ref('');
             const newExpenseValue = ref('');
@@ -556,8 +512,7 @@
             const showConfirmTestData = ref(false);
             const showClearConfirmStep1 = ref(false);
             const showClearConfirmStep2 = ref(false);
-
-            const collapsedDays = ref({}); 
+            const collapsedDays = ref({});
 
             const formTrip = ref({ location: '', startDate: '', endDate: '' });
             const formItem = ref({});
@@ -579,9 +534,10 @@
             onMounted(() => {
                 const saved = localStorage.getItem('tripplanner_trips_v3');
                 trips.value = saved ? JSON.parse(saved) : [];
-                
                 const savedCollapsed = localStorage.getItem('tripplanner_collapsed_v1');
                 collapsedDays.value = savedCollapsed ? JSON.parse(savedCollapsed) : {};
+                const savedSet = localStorage.getItem('tripplanner_global_settings');
+                if (savedSet) settings.value = JSON.parse(savedSet);
 
                 const theme = localStorage.getItem('tripplanner_theme');
                 isDark.value = theme === 'dark' || (window.matchMedia('(prefers-color-scheme: dark)').matches && !theme);
@@ -589,53 +545,39 @@
                 nextTick(() => lucide.createIcons());
             });
 
-            watch(trips, (newVal) => localStorage.setItem('tripplanner_trips_v3', JSON.stringify(newVal)), { deep: true });
-            watch(collapsedDays, (newVal) => localStorage.setItem('tripplanner_collapsed_v1', JSON.stringify(newVal)), { deep: true });
-            watch([selectedTrip, currentTab, showNewTripModal, activeAddModal, viewingDoc, showConfirmTestData, showClearConfirmStep1, showClearConfirmStep2, collapsedDays], () => nextTick(() => lucide.createIcons()));
+            watch(trips, (nv) => localStorage.setItem('tripplanner_trips_v3', JSON.stringify(nv)), { deep: true });
+            watch(collapsedDays, (nv) => localStorage.setItem('tripplanner_collapsed_v1', JSON.stringify(nv)), { deep: true });
+            watch(settings, (nv) => localStorage.setItem('tripplanner_global_settings', JSON.stringify(nv)), { deep: true });
+            watch([selectedTrip, currentTab, showNewTripModal, activeAddModal, viewingDoc, showConfirmTestData, showClearConfirmStep1, showClearConfirmStep2], () => nextTick(() => lucide.createIcons()));
 
-            const toggleDarkMode = () => {
-                isDark.value = !isDark.value;
-                localStorage.setItem('tripplanner_theme', isDark.value ? 'dark' : 'light');
-                applyTheme();
-            };
+            const toggleDarkMode = () => { isDark.value = !isDark.value; localStorage.setItem('tripplanner_theme', isDark.value ? 'dark' : 'light'); applyTheme(); };
             const applyTheme = () => document.documentElement.classList.toggle('dark', isDark.value);
 
             const migrateTrip = (trip) => {
                 if (!trip.people) trip.people = ["Daniel", "Dina"];
                 if (!trip.paymentMethods) trip.paymentMethods = ["Dinheiro", "Pix", "Cartão"];
-                if (!trip.expenseTypes) {
-                    trip.expenseTypes = ["Alimentação", "Transporte", "Hospedagem", "Turismo", "Compras", "Saúde", "Passagens", "Lazer", "Diversos"];
-                }
+                if (!trip.expenseTypes) trip.expenseTypes = ["Alimentação", "Transporte", "Hospedagem", "Turismo", "Compras", "Saúde", "Passagens", "Lazer", "Diversos"];
                 if (!trip.linkTypes) trip.linkTypes = ["Reservas", "Ingressos", "Transporte", "Dicas", "Mapas"];
-                if (trip.itinerary) {
-                    trip.itinerary.forEach(item => { if (item.done === undefined) item.done = false; });
-                }
+                if (trip.itinerary) trip.itinerary.forEach(i => { if (i.done === undefined) i.done = false; });
                 return trip;
             };
 
             const selectTrip = (trip) => selectedTrip.value = migrateTrip(trip);
             const goHome = () => selectedTrip.value = null;
 
-            const openEditTrip = (trip) => { isEditing.value = true; formTrip.value = { ...trip }; showNewTripModal.value = true; };
-            const closeTripModal = () => { showNewTripModal.value = false; isEditing.value = false; formTrip.value = { location: '', startDate: '', endDate: '' }; };
-            
             const saveTrip = () => {
                 if (!formTrip.value.location) return;
                 if (isEditing.value) {
                     const idx = trips.value.findIndex(t => t.id === formTrip.value.id);
                     trips.value[idx] = { ...formTrip.value };
                 } else {
-                    const newT = migrateTrip({ 
-                        id: Date.now().toString(), 
-                        ...formTrip.value, 
-                        finance: [], itinerary: [], links: [], docs: [],
-                        people: ["Daniel", "Dina"] 
-                    });
-                    trips.value.push(newT);
+                    trips.value.push(migrateTrip({ id: Date.now().toString(), ...formTrip.value, finance: [], itinerary: [], links: [], docs: [] }));
                 }
                 closeTripModal();
             };
 
+            const openEditTrip = (trip) => { isEditing.value = true; formTrip.value = { ...trip }; showNewTripModal.value = true; };
+            const closeTripModal = () => { showNewTripModal.value = false; isEditing.value = false; formTrip.value = { location: '', startDate: '', endDate: '' }; };
             const deleteTrip = (id) => { if (confirm('Excluir viagem?')) trips.value = trips.value.filter(t => t.id !== id); };
 
             const openAddModal = (type) => {
@@ -646,13 +588,10 @@
                     formItem.value.paidBy = selectedTrip.value.people[0]; 
                     formItem.value.method = selectedTrip.value.paymentMethods[0]; 
                 }
-                if (type === 'itinerary') {
-                    formItem.value.date = selectedTrip.value.startDate;
-                    formItem.value.done = false;
-                }
+                if (type === 'itinerary') { formItem.value.date = selectedTrip.value.startDate; formItem.value.done = false; }
                 if (type === 'links') formItem.value.category = selectedTrip.value.linkTypes[0];
             };
-            
+
             const openEditItem = (type, item) => { isEditing.value = true; activeAddModal.value = type; formItem.value = { ...item }; };
             const saveItem = () => {
                 const list = selectedTrip.value[activeAddModal.value];
@@ -662,145 +601,124 @@
             };
             const removeItem = (type, id) => { selectedTrip.value[type] = selectedTrip.value[type].filter(i => i.id !== id); };
 
-            const toggleCollapse = (tab, date) => {
-                const key = `${tab}-${date}`;
-                collapsedDays.value[key] = !collapsedDays.value[key];
-            };
-            const isCollapsed = (tab, date) => { return !!collapsedDays.value[`${tab}-${date}`]; };
+            const toggleCollapse = (tab, date) => { const k = `${tab}-${date}`; collapsedDays.value[k] = !collapsedDays.value[k]; };
+            const isCollapsed = (tab, date) => !!collapsedDays.value[`${tab}-${date}`];
 
             const addListSetting = (key) => {
-                let val = '';
-                if(key === 'people') { val = newSettingValue.value; newSettingValue.value = ''; }
-                else if(key === 'paymentMethods') { val = newPaymentValue.value; newPaymentValue.value = ''; }
-                else if(key === 'expenseTypes') { val = newExpenseValue.value; newExpenseValue.value = ''; }
-                else if(key === 'linkTypes') { val = newLinkTypeValue.value; newLinkTypeValue.value = ''; }
-                
-                if (val && val.trim() && !selectedTrip.value[key].includes(val.trim())) {
-                    selectedTrip.value[key].push(val.trim());
-                }
+                let v = '';
+                if(key==='people') { v=newSettingValue.value; newSettingValue.value=''; }
+                else if(key==='paymentMethods') { v=newPaymentValue.value; newPaymentValue.value=''; }
+                else if(key==='expenseTypes') { v=newExpenseValue.value; newExpenseValue.value=''; }
+                else if(key==='linkTypes') { v=newLinkTypeValue.value; newLinkTypeValue.value=''; }
+                if (v && v.trim() && !selectedTrip.value[key].includes(v.trim())) selectedTrip.value[key].push(v.trim());
             };
-            const removeListSetting = (key, idx) => {
-                if(selectedTrip.value[key].length > 1) selectedTrip.value[key].splice(idx, 1);
-                else alert("A lista precisa de pelo menos um item.");
-            };
+            const removeListSetting = (key, idx) => { if(selectedTrip.value[key].length > 1) selectedTrip.value[key].splice(idx, 1); };
 
             const handleDocSelection = (e) => {
-                const file = e.target.files[0]; if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (ev) => { 
-                    const name = prompt("Dê um nome ao documento:", file.name.split('.')[0]) || "Documento";
+                const f = e.target.files[0]; if (!f) return;
+                const r = new FileReader();
+                r.onload = (ev) => { 
+                    const n = prompt("Nome do documento:", f.name.split('.')[0]) || "Doc";
                     if (!selectedTrip.value.docs) selectedTrip.value.docs = [];
-                    selectedTrip.value.docs.push({ id: Date.now().toString(), data: ev.target.result, type: file.type, name }); 
+                    selectedTrip.value.docs.push({ id: Date.now().toString(), data: ev.target.result, type: f.type, name: n }); 
                 };
-                reader.readAsDataURL(file);
+                r.readAsDataURL(f);
             };
             const viewDocument = (doc) => viewingDoc.value = doc;
 
-            const startClearData = () => { showClearConfirmStep1.value = true; };
+            const startClearData = () => showClearConfirmStep1.value = true;
             const goToClearStep2 = () => { showClearConfirmStep1.value = false; showClearConfirmStep2.value = true; };
-            const confirmClearAll = () => {
-                trips.value = [];
-                collapsedDays.value = {};
-                localStorage.removeItem('tripplanner_trips_v3');
-                localStorage.removeItem('tripplanner_collapsed_v1');
-                showClearConfirmStep2.value = false;
-                alert('Todos os dados foram removidos.');
-            };
+            const confirmClearAll = () => { trips.value = []; collapsedDays.value = {}; showClearConfirmStep2.value = false; alert('Limpo!'); };
 
             const handleTestData = () => { if (trips.value.length > 0) showConfirmTestData.value = true; else confirmTestData(); };
-            
             const confirmTestData = () => {
                 const now = new Date();
-                const future = (days) => { 
-                    const d = new Date(now); 
-                    d.setDate(d.getDate() + days); 
-                    return d.toISOString().split('T')[0]; 
-                };
+                const f = (d) => { const x = new Date(now); x.setDate(x.getDate() + d); return x.toISOString().split('T')[0]; };
 
                 trips.value = [
                     migrateTrip({
-                        id: 'nyc-2026', location: 'Nova York, EUA', startDate: future(30), endDate: future(40), people: ["Daniel", "Dina"],
+                        id: 'nyc-real', location: 'Nova York, EUA', startDate: f(30), endDate: f(40), people: ["Daniel", "Dina"],
                         finance: [
-                            { id: 'f1', name: 'Voo Delta', value: 4200, date: future(30), paidBy: 'Daniel', method: 'Cartão', type: 'Passagens' },
-                            { id: 'f2', name: 'Marriott Times Square', value: 8500, date: future(30), paidBy: 'Dina', method: 'Cartão', type: 'Hospedagem' },
-                            { id: 'f3', name: 'Jantar Keens Steakhouse', value: 650, date: future(31), paidBy: 'Daniel', method: 'Cartão', type: 'Alimentação' },
-                            { id: 'f4', name: 'MetroCard', value: 180, date: future(31), paidBy: 'Daniel', method: 'Dinheiro', type: 'Transporte' },
-                            { id: 'f5', name: 'Edge Observatory', value: 220, date: future(32), paidBy: 'Dina', method: 'Pix', type: 'Turismo' },
-                            { id: 'f6', name: 'Apple Store Shopping', value: 5500, date: future(33), paidBy: 'Daniel', method: 'Cartão', type: 'Compras' },
-                            { id: 'f7', name: 'Shake Shack Lunch', value: 120, date: future(33), paidBy: 'Dina', method: 'Dinheiro', type: 'Alimentação' },
-                            { id: 'f8', name: 'Lion King Broadway', value: 950, date: future(34), paidBy: 'Daniel', method: 'Cartão', type: 'Lazer' },
-                            { id: 'f9', name: 'Seguro Viagem', value: 450, date: future(30), paidBy: 'Dina', method: 'Pix', type: 'Saúde' },
-                            { id: 'f10', name: 'Uber para JFK', value: 350, date: future(40), paidBy: 'Daniel', method: 'Dinheiro', type: 'Transporte' }
+                            { id: 'f1', name: 'Passagens Delta', value: 4200, date: f(30), paidBy: 'Daniel', method: 'Cartão', type: 'Passagens' },
+                            { id: 'f2', name: 'Hotel Marriott Times Sq', value: 8500, date: f(30), paidBy: 'Dina', method: 'Cartão', type: 'Hospedagem' },
+                            { id: 'f3', name: 'Jantar Keens Steakhouse', value: 650, date: f(31), paidBy: 'Daniel', method: 'Cartão', type: 'Alimentação' },
+                            { id: 'f4', name: 'MetroCard Ilimitado', value: 180, date: f(31), paidBy: 'Daniel', method: 'Dinheiro', type: 'Transporte' },
+                            { id: 'f5', name: 'Ingresso Edge', value: 220, date: f(32), paidBy: 'Dina', method: 'Pix', type: 'Turismo' },
+                            { id: 'f6', name: 'Compras Apple Store', value: 5500, date: f(33), paidBy: 'Daniel', method: 'Cartão', type: 'Compras' },
+                            { id: 'f7', name: 'Almoço Shake Shack', value: 120, date: f(33), paidBy: 'Dina', method: 'Dinheiro', type: 'Alimentação' },
+                            { id: 'f8', name: 'Show Lion King Broadway', value: 950, date: f(34), paidBy: 'Daniel', method: 'Cartão', type: 'Lazer' },
+                            { id: 'f9', name: 'Seguro Allianz', value: 450, date: f(30), paidBy: 'Dina', method: 'Pix', type: 'Saúde' },
+                            { id: 'f10', name: 'Uber JFK', value: 350, date: f(40), paidBy: 'Daniel', method: 'Dinheiro', type: 'Transporte' }
                         ],
                         itinerary: [
-                            { id: 'i1', name: 'Voo GRU -> JFK', date: future(30), time: '22:00', done: true },
-                            { id: 'i2', name: 'Check-in Hotel', date: future(31), time: '14:00', done: false },
-                            { id: 'i3', name: 'Central Park Walk', date: future(31), time: '16:30', done: false },
-                            { id: 'i4', name: 'Museu de História Natural', date: future(32), time: '10:00', done: false },
-                            { id: 'i5', name: 'High Line Sunset', date: future(32), time: '18:00', done: false },
-                            { id: 'i6', name: '5th Ave Shopping', date: future(33), time: '10:00', done: false },
-                            { id: 'i7', name: 'Statue of Liberty', date: future(34), time: '09:00', done: false },
-                            { id: 'i8', name: '9/11 Memorial', date: future(34), time: '14:00', done: false },
-                            { id: 'i9', name: 'Brooklyn Bridge', date: future(35), time: '17:00', done: false },
-                            { id: 'i10', name: 'Voo Retorno JFK', date: future(40), time: '20:00', done: false }
+                            { id: 'i1', name: 'Voo GRU -> JFK', date: f(30), time: '22:00', done: true },
+                            { id: 'i2', name: 'Check-in Hotel', date: f(31), time: '14:00', done: false },
+                            { id: 'i3', name: 'Central Park Walk', date: f(31), time: '16:30', done: false },
+                            { id: 'i4', name: 'Museu História Natural', date: f(32), time: '10:00', done: false },
+                            { id: 'i5', name: 'High Line Sunset', date: f(32), time: '18:00', done: false },
+                            { id: 'i6', name: '5th Ave Shopping', date: f(33), time: '10:00', done: false },
+                            { id: 'i7', name: 'Statue of Liberty', date: f(34), time: '09:00', done: false },
+                            { id: 'i8', name: '9/11 Memorial', date: f(34), time: '14:00', done: false },
+                            { id: 'i9', name: 'Brooklyn Bridge', date: f(35), time: '17:00', done: false },
+                            { id: 'i10', name: 'Voo Retorno JFK', date: f(40), time: '20:00', done: false }
                         ],
                         links: [
-                            { id: 'l1', name: 'Voucher Marriott', url: 'https://marriott.com', category: 'Reservas' },
-                            { id: 'l2', name: 'Passagem Delta', url: 'https://delta.com', category: 'Transporte' },
-                            { id: 'l3', name: 'Eater NYC Guide', url: 'https://eater.com/new-york', category: 'Dicas' },
-                            { id: 'l4', name: 'CityPASS NY', url: 'https://citypass.com', category: 'Ingressos' },
-                            { id: 'l5', name: 'MTA Subway Map', url: 'https://mta.info', category: 'Mapas' },
-                            { id: 'l6', name: 'Lion King Tickets', url: 'https://broadway.com', category: 'Reservas' },
-                            { id: 'l7', name: 'TimeOut NY Events', url: 'https://timeout.com', category: 'Dicas' },
-                            { id: 'l8', name: 'Woodbury Common Map', url: 'https://google.com', category: 'Mapas' },
-                            { id: 'l9', name: 'Allianz Insurance', url: 'https://allianz.com', category: 'Dicas' },
-                            { id: 'l10', name: 'Weather NYC', url: 'https://accuweather.com', category: 'Dicas' }
+                            { id: 'l1', name: 'Marriott Voucher', url: 'https://marriott.com', category: 'Reservas' },
+                            { id: 'l2', name: 'Bilhete Delta', url: 'https://delta.com', category: 'Transporte' },
+                            { id: 'l3', name: 'Eater NYC Guide', url: 'https://eater.com', category: 'Dicas' },
+                            { id: 'l4', name: 'CityPASS', url: 'https://citypass.com', category: 'Ingressos' },
+                            { id: 'l5', name: 'Mapa do Metrô', url: 'https://mta.info', category: 'Mapas' },
+                            { id: 'l6', name: 'Tickets Broadway', url: 'https://broadway.com', category: 'Reservas' },
+                            { id: 'l7', name: 'TimeOut Events', url: 'https://timeout.com', category: 'Dicas' },
+                            { id: 'l8', name: 'Localização Outlet', url: 'https://maps.google.com', category: 'Mapas' },
+                            { id: 'l9', name: 'Apólice Seguro', url: 'https://allianz.com', category: 'Dicas' },
+                            { id: 'l10', name: 'Tempo NYC', url: 'https://accuweather.com', category: 'Dicas' }
                         ],
                         docs: []
                     }),
                     migrateTrip({
-                        id: 'lisboa-2026', location: 'Lisboa, Portugal', startDate: future(100), endDate: future(110), people: ["Daniel", "Dina"],
+                        id: 'lisboa-real', location: 'Lisboa, Portugal', startDate: f(100), endDate: f(110), people: ["Daniel", "Dina"],
                         finance: [
-                            { id: 'f11', name: 'Voo TAP', value: 3800, date: future(100), paidBy: 'Dina', method: 'Cartão', type: 'Passagens' },
-                            { id: 'f12', name: 'Airbnb Alfama', value: 2900, date: future(100), paidBy: 'Daniel', method: 'Cartão', type: 'Hospedagem' },
-                            { id: 'f13', name: 'Ponto Final Dinner', value: 250, date: future(101), paidBy: 'Dina', method: 'Dinheiro', type: 'Alimentação' },
-                            { id: 'f14', name: 'Car Rental', value: 1200, date: future(102), paidBy: 'Daniel', method: 'Cartão', type: 'Transporte' },
-                            { id: 'f15', name: 'S. Jorge Castle', value: 80, date: future(102), paidBy: 'Dina', method: 'Dinheiro', type: 'Turismo' },
-                            { id: 'f16', name: 'Alentejo Wine', value: 450, date: future(103), paidBy: 'Daniel', method: 'Pix', type: 'Compras' },
-                            { id: 'f17', name: 'Pasteis de Belem', value: 60, date: future(104), paidBy: 'Dina', method: 'Dinheiro', type: 'Alimentação' },
-                            { id: 'f18', name: 'Fado Show', value: 300, date: future(104), paidBy: 'Daniel', method: 'Cartão', type: 'Lazer' },
-                            { id: 'f19', name: 'Sintra Train', value: 45, date: future(105), paidBy: 'Dina', method: 'Dinheiro', type: 'Transporte' },
-                            { id: 'f20', name: 'Farmacia', value: 90, date: future(105), paidBy: 'Daniel', method: 'Pix', type: 'Saúde' }
+                            { id: 'f11', name: 'Voo TAP', value: 3800, date: f(100), paidBy: 'Dina', method: 'Cartão', type: 'Passagens' },
+                            { id: 'f12', name: 'Airbnb Alfama', value: 2900, date: f(100), paidBy: 'Daniel', method: 'Cartão', type: 'Hospedagem' },
+                            { id: 'f13', name: 'Jantar Ponto Final', value: 250, date: f(101), paidBy: 'Dina', method: 'Dinheiro', type: 'Alimentação' },
+                            { id: 'f14', name: 'Car Rental', value: 1200, date: f(102), paidBy: 'Daniel', method: 'Cartão', type: 'Transporte' },
+                            { id: 'f15', name: 'Castelo S. Jorge', value: 80, date: f(102), paidBy: 'Dina', method: 'Dinheiro', type: 'Turismo' },
+                            { id: 'f16', name: 'Vinhos Alentejo', value: 450, date: f(103), paidBy: 'Daniel', method: 'Pix', type: 'Compras' },
+                            { id: 'f17', name: 'Pastéis Belém', value: 60, date: f(104), paidBy: 'Dina', method: 'Dinheiro', type: 'Alimentação' },
+                            { id: 'f18', name: 'Show de Fado', value: 300, date: f(104), paidBy: 'Daniel', method: 'Cartão', type: 'Lazer' },
+                            { id: 'f19', name: 'Trem Sintra', value: 45, date: f(105), paidBy: 'Dina', method: 'Dinheiro', type: 'Transporte' },
+                            { id: 'f20', name: 'Farmácia', value: 90, date: f(105), paidBy: 'Daniel', method: 'Pix', type: 'Saúde' }
                         ],
                         itinerary: [
-                            { id: 'i11', name: 'Chegada LIS', date: future(100), time: '08:00', done: true },
-                            { id: 'i12', name: 'Alfama Walk', date: future(101), time: '10:00', done: true },
-                            { id: 'i13', name: 'Miradouro Sra Monte', date: future(101), time: '17:30', done: false },
-                            { id: 'i14', name: 'LX Factory', date: future(102), time: '15:00', done: false },
-                            { id: 'i15', name: 'Torre Belem', date: future(103), time: '10:00', done: false },
-                            { id: 'i16', name: 'Jerónimos', date: future(103), time: '14:00', done: false },
-                            { id: 'i17', name: 'Cascais Day Trip', date: future(104), time: '09:00', done: false },
-                            { id: 'i18', name: 'Pena Sintra', date: future(105), time: '10:00', done: false },
-                            { id: 'i19', name: 'Regaleira', date: future(105), time: '14:30', done: false },
-                            { id: 'i20', name: 'Voo Retorno', date: future(110), time: '11:00', done: false }
+                            { id: 'i11', name: 'Chegada LIS', date: f(100), time: '08:00', done: true },
+                            { id: 'i12', name: 'Walk Alfama', date: f(101), time: '10:00', done: true },
+                            { id: 'i13', name: 'Sra Monte View', date: f(101), time: '17:30', done: false },
+                            { id: 'i14', name: 'LX Factory', date: f(102), time: '15:00', done: false },
+                            { id: 'i15', name: 'Torre de Belém', date: f(103), time: '10:00', done: false },
+                            { id: 'i16', name: 'Jerónimos', date: f(103), time: '14:00', done: false },
+                            { id: 'i17', name: 'Cascais Trip', date: f(104), time: '09:00', done: false },
+                            { id: 'i18', name: 'Pena Palace', date: f(105), time: '10:00', done: false },
+                            { id: 'i19', name: 'Regaleira', date: f(105), time: '14:30', done: false },
+                            { id: 'i20', name: 'Voo Retorno', date: f(110), time: '11:00', done: false }
                         ],
                         links: [
                             { id: 'l11', name: 'Airbnb Voucher', url: 'https://airbnb.com', category: 'Reservas' },
-                            { id: 'l12', name: 'TAP Online Checkin', url: 'https://flytap.com', category: 'Transporte' },
-                            { id: 'l13', name: 'Comboios de Portugal', url: 'https://cp.pt', category: 'Transporte' },
+                            { id: 'l12', name: 'TAP Checkin', url: 'https://flytap.com', category: 'Transporte' },
+                            { id: 'l13', name: 'CP Comboios', url: 'https://cp.pt', category: 'Transporte' },
                             { id: 'l14', name: 'Lisboa Guide', url: 'https://lisboa.com', category: 'Dicas' },
                             { id: 'l15', name: 'Miradouros Map', url: 'https://google.com', category: 'Mapas' },
-                            { id: 'l16', name: 'Pastéis Belém Site', url: 'https://pasteisdebelem.pt', category: 'Dicas' },
+                            { id: 'l16', name: 'Pastéis Belém', url: 'https://pasteisdebelem.pt', category: 'Dicas' },
                             { id: 'l17', name: 'Sintra Tickets', url: 'https://parquesdesintra.pt', category: 'Ingressos' },
                             { id: 'l18', name: 'TimeOut Lisboa', url: 'https://timeout.pt', category: 'Dicas' },
-                            { id: 'l19', name: 'Free Walking Tour', url: 'https://freetour.com', category: 'Dicas' },
+                            { id: 'l19', name: 'Walking Tour', url: 'https://freetour.com', category: 'Dicas' },
                             { id: 'l20', name: 'LX Factory Map', url: 'https://lxfactory.com', category: 'Mapas' }
                         ],
                         docs: []
                     })
                 ];
                 showConfirmTestData.value = false;
-                alert('Dados expandidos com sucesso para Nova York e Lisboa!');
+                alert('Dados reais carregados!');
             };
 
             const groupedFinance = computed(() => {
@@ -811,95 +729,67 @@
                 });
                 return g;
             });
-            const totalFinance = computed(() => selectedTrip.value?.finance?.reduce((s,i)=>s+(i.value||0),0) || 0);
-
+            const totalFinance = computed(() => selectedTrip.value?.finance?.reduce((s,i)=>s+(i.value||0), 0) || 0);
             const categoryTotals = computed(() => {
-                if (!selectedTrip.value?.finance) return {};
-                const totals = {};
-                selectedTrip.value.finance.forEach(item => {
-                    const cat = item.type || 'Diversos';
-                    totals[cat] = (totals[cat] || 0) + Number(item.value || 0);
-                });
-                return Object.fromEntries(Object.entries(totals).sort(([,a],[,b]) => b - a));
+                const t = {};
+                selectedTrip.value?.finance?.forEach(i => { const c = i.type || 'Diversos'; t[c] = (t[c] || 0) + Number(i.value || 0); });
+                return Object.fromEntries(Object.entries(t).sort(([,a],[,b]) => b - a));
             });
 
             const financeSummary = computed(() => {
-                if (!selectedTrip.value || selectedTrip.value.people.length === 0) 
-                    return { byPerson: {}, transfers: [], fairShare: 0 };
+                if (!selectedTrip.value) return { byPerson: {}, transfers: [] };
                 const totals = {};
                 selectedTrip.value.people.forEach(p => totals[p] = 0);
-                let grandTotal = 0;
-                selectedTrip.value.finance.forEach(item => {
-                    if (totals[item.paidBy] !== undefined) {
-                        const val = Number(item.value || 0);
-                        totals[item.paidBy] += val; grandTotal += val;
-                    }
-                });
-                const numPeople = selectedTrip.value.people.length;
-                const fairShare = grandTotal / numPeople;
-                let balances = selectedTrip.value.people.map(p => ({ name: p, amount: totals[p] - fairShare }));
-                const transfers = [];
-                let debtors = balances.filter(b => b.amount < -0.01).sort((a, b) => a.amount - b.amount);
-                let creditors = balances.filter(b => b.amount > 0.01).sort((a, b) => b.amount - a.amount);
-                let dIdx = 0, cIdx = 0;
-                while (dIdx < debtors.length && cIdx < creditors.length) {
-                    let debtor = debtors[dIdx], creditor = creditors[cIdx];
-                    let amountToTransfer = Math.min(Math.abs(debtor.amount), creditor.amount);
-                    if (amountToTransfer > 0.01) transfers.push({ from: debtor.name, to: creditor.name, amount: amountToTransfer });
-                    debtor.amount += amountToTransfer; creditor.amount -= amountToTransfer;
-                    if (Math.abs(debtor.amount) < 0.01) dIdx++;
-                    if (Math.abs(creditor.amount) < 0.01) cIdx++;
+                let gt = 0;
+                selectedTrip.value.finance.forEach(i => { if (totals[i.paidBy] !== undefined) { const v = Number(i.value || 0); totals[i.paidBy] += v; gt += v; } });
+                const fair = gt / selectedTrip.value.people.length;
+                let balances = selectedTrip.value.people.map(p => ({ name: p, amount: totals[p] - fair }));
+                const trans = [];
+                let ds = balances.filter(b => b.amount < -0.01).sort((a,b) => a.amount - b.amount);
+                let cs = balances.filter(b => b.amount > 0.01).sort((a,b) => b.amount - a.amount);
+                let d=0, c=0;
+                while(d < ds.length && c < cs.length) {
+                    let amt = Math.min(Math.abs(ds[d].amount), cs[c].amount);
+                    if(amt > 0.01) trans.push({ from: ds[d].name, to: cs[c].name, amount: amt });
+                    ds[d].amount += amt; cs[c].amount -= amt;
+                    if(Math.abs(ds[d].amount) < 0.01) d++;
+                    if(Math.abs(cs[c].amount) < 0.01) c++;
                 }
-                return { byPerson: totals, transfers, fairShare };
+                return { byPerson: totals, transfers: trans };
             });
 
             const groupedItinerary = computed(() => {
                 const g = {};
-                [...selectedTrip.value?.itinerary || []].sort((a,b)=>{
-                    const d = new Date(a.date)-new Date(b.date); return d !== 0 ? d : a.time.localeCompare(b.time);
-                }).forEach(i => { if (!g[i.date]) g[i.date] = []; g[i.date].push(i); });
+                [...selectedTrip.value?.itinerary || []].sort((a,b)=>new Date(a.date)-new Date(b.date) || a.time.localeCompare(b.time)).forEach(i => {
+                    if (!g[i.date]) g[i.date] = []; g[i.date].push(i);
+                });
                 return g;
             });
             const groupedLinks = computed(() => {
-                const g = {}; selectedTrip.value?.links?.forEach(i => { const c = i.category || 'Outros'; if (!g[c]) g[c] = []; g[c].push(i); });
+                const g = {};
+                selectedTrip.value?.links?.forEach(i => { const c = i.category || 'Outros'; if (!g[c]) g[c] = []; g[c].push(i); });
                 return g;
             });
 
             const formatDate = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'short'}) : '';
             const formatCurrency = (v) => new Intl.NumberFormat('pt-BR', {style:'currency', currency:'BRL'}).format(v);
-            const getDaysUntil = (d) => {
-                const diff = Math.ceil((new Date(d) - new Date()) / 86400000);
-                return diff < 0 ? 'Concluída' : diff === 0 ? 'Hoje!' : `Faltam ${diff} dias`;
-            };
-
-            const normalize = (str) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            const getCategoryIcon = (t) => {
-                const n = normalize(t);
-                return { alimentacao: 'utensils', transporte: 'car', turismo: 'camera', compras: 'shopping-bag', saude: 'plus-square', hospedagem: 'home', passagens: 'plane', lazer: 'ticket', diversos: 'tag' }[n] || 'tag';
-            };
-            const getCategoryColor = (t) => {
-                const n = normalize(t);
-                return { alimentacao: 'bg-orange-500', transporte: 'bg-blue-500', turismo: 'bg-purple-500', compras: 'bg-pink-500', saude: 'bg-red-500', hospedagem: 'bg-emerald-500', passagens: 'bg-cyan-600', lazer: 'bg-yellow-500', diversos: 'bg-gray-400' }[n] || 'bg-gray-400';
-            };
-
+            const getDaysUntil = (d) => { const diff = Math.ceil((new Date(d) - new Date()) / 86400000); return diff < 0 ? 'Concluída' : diff === 0 ? 'Hoje!' : `Faltam ${diff} dias`; };
+            const normalize = (s) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const getCategoryIcon = (t) => ({ alimentacao: 'utensils', transporte: 'car', turismo: 'camera', compras: 'shopping-bag', saude: 'plus-square', hospedagem: 'home', passagens: 'plane', lazer: 'ticket', diversos: 'tag' }[normalize(t)] || 'tag');
+            const getCategoryColor = (t) => ({ alimentacao: 'bg-orange-500', transporte: 'bg-blue-500', turismo: 'bg-purple-500', compras: 'bg-pink-500', saude: 'bg-red-500', hospedagem: 'bg-emerald-500', passagens: 'bg-cyan-600', lazer: 'bg-yellow-500', diversos: 'bg-gray-400' }[normalize(t)] || 'bg-gray-400');
             const getModalTitle = computed(() => ({ finance: 'Gasto', itinerary: 'Item', links: 'Link' }[activeAddModal.value]));
             const exportData = () => {
-                const blob = new Blob([JSON.stringify({ trips: trips.value, collapsed: collapsedDays.value })], { type: 'application/json' });
-                const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `TripPlanner_Backup.json`; a.click();
+                const b = new Blob([JSON.stringify({ trips: trips.value, collapsed: collapsedDays.value, settings: settings.value })], { type: 'application/json' });
+                const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = `TripPlanner_Backup.json`; a.click();
             };
             const importData = (e) => {
-                const reader = new FileReader(); reader.onload = (ev) => {
-                    try { 
-                        const data = JSON.parse(ev.target.result); 
-                        if (data.trips) { trips.value = data.trips; collapsedDays.value = data.collapsed || {}; }
-                        else if (Array.isArray(data)) { trips.value = data; }
-                        alert('Importado!'); 
-                    } catch(e) { alert('Erro.'); }
-                }; reader.readAsText(e.target.files[0]);
+                const r = new FileReader(); r.onload = (ev) => {
+                    try { const d = JSON.parse(ev.target.result); if(d.trips) { trips.value = d.trips; collapsedDays.value = d.collapsed || {}; settings.value = d.settings || { hideDevButtons: false }; } else if(Array.isArray(d)) { trips.value = d; } alert('Importado!'); } catch(ex) { alert('Erro.'); }
+                }; r.readAsText(e.target.files[0]);
             };
 
             return {
-                trips, selectedTrip, currentTab, tabs, isDark, toggleDarkMode, displayTitle,
+                trips, selectedTrip, currentTab, tabs, isDark, toggleDarkMode, displayTitle, settings,
                 showNewTripModal, formTrip, saveTrip, openEditTrip, deleteTrip, selectTrip, goHome, closeTripModal,
                 formatDate, formatCurrency, getDaysUntil, exportData, importData,
                 activeAddModal, openAddModal, openEditItem, isEditing, formItem, saveItem, removeItem,
