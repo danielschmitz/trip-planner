@@ -43,6 +43,19 @@
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-200">
 
 <div id="app" v-cloak class="max-w-md mx-auto min-h-screen flex flex-col pb-20">
+    <!-- Notificação de Atualização (PWA Update) -->
+    <div v-if="updateAvailable" class="fixed top-4 left-4 right-4 z-[200] animate-slide-up">
+        <div class="bg-blue-600 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between border border-white/20">
+            <div class="flex items-center gap-3">
+                <i data-lucide="refresh-cw" class="w-5 h-5 animate-spin"></i>
+                <span class="text-sm font-bold">Nova versão disponível!</span>
+            </div>
+            <button @click="refreshApp" class="bg-white text-blue-600 px-4 py-1.5 rounded-xl text-xs font-black uppercase shadow-sm">
+                Atualizar
+            </button>
+        </div>
+    </div>
+
     <!-- Header Dinâmico -->
     <header class="p-4 flex justify-between items-center sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md z-40 border-b dark:border-gray-800 h-16">
         <div class="flex items-center gap-2 cursor-pointer truncate flex-grow mr-2" @click="goHome">
@@ -510,6 +523,10 @@
             const showClearConfirmStep2 = ref(false);
             const viewingDoc = ref(null);
 
+            // Controle de Atualização PWA
+            const updateAvailable = ref(false);
+            let registrationWaiting = null;
+
             // Confirmação de Exclusão
             const showDeleteConfirm = ref(false);
             const deleteContext = ref({ type: '', id: '', title: '' });
@@ -556,7 +573,32 @@
                 isDark.value = theme === 'dark' || (window.matchMedia('(prefers-color-scheme: dark)').matches && !theme);
                 applyTheme();
                 nextTick(() => lucide.createIcons());
+
+                // Registro do Service Worker com detecção de update e proteção de ambiente
+                if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+                    navigator.serviceWorker.register('sw.js').then(reg => {
+                        reg.addEventListener('updatefound', () => {
+                            const newWorker = reg.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    registrationWaiting = reg.waiting;
+                                    updateAvailable.value = true;
+                                }
+                            });
+                        });
+                    }).catch(err => {
+                        // Silencia o erro se for apenas uma restrição de ambiente local/blob
+                        console.warn('Service Worker não suportado neste ambiente.');
+                    });
+                }
             });
+
+            const refreshApp = () => {
+                if (registrationWaiting) {
+                    registrationWaiting.postMessage({ type: 'SKIP_WAITING' });
+                }
+                window.location.reload();
+            };
 
             watch(trips, (nv) => localStorage.setItem('tripplanner_trips_v3', JSON.stringify(nv)), { deep: true });
             watch(collapsedDays, (nv) => localStorage.setItem('tripplanner_collapsed_v1', JSON.stringify(nv)), { deep: true });
@@ -566,7 +608,7 @@
                 else localStorage.removeItem('tripplanner_last_trip_id');
             });
             watch(currentTab, (nv) => localStorage.setItem('tripplanner_last_tab', nv));
-            watch([selectedTrip, currentTab, showNewTripModal, activeAddModal, showConfirmTestData, showClearConfirmStep1, showClearConfirmStep2, viewingDoc, showDeleteConfirm], () => nextTick(() => lucide.createIcons()));
+            watch([selectedTrip, currentTab, showNewTripModal, activeAddModal, showConfirmTestData, showClearConfirmStep1, showClearConfirmStep2, viewingDoc, showDeleteConfirm, updateAvailable], () => nextTick(() => lucide.createIcons()));
 
             const toggleDarkMode = () => { isDark.value = !isDark.value; localStorage.setItem('tripplanner_theme', isDark.value ? 'dark' : 'light'); applyTheme(); };
             const applyTheme = () => document.documentElement.classList.toggle('dark', isDark.value);
@@ -827,19 +869,11 @@
                 handleTestData, showConfirmTestData, confirmTestData,
                 addListSetting, removeListSetting, newSettingValue, newPaymentValue, newExpenseValue, newLinkTypeValue,
                 startClearData, goToClearStep2, confirmClearAll, showClearConfirmStep1, showClearConfirmStep2,
-                toggleCollapse, isCollapsed
+                toggleCollapse, isCollapsed,
+                updateAvailable, refreshApp
             };
         }
     }).mount('#app');
-</script>
-
-<!-- Scripts para PWA -->
-<script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            console.log('Ambiente PWA pronto.');
-        });
-    }
 </script>
 </body>
 </html>
