@@ -10,7 +10,9 @@ const ASSETS = [
   './manifest.json',
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/vue@3/dist/vue.global.js',
-  'https://unpkg.com/lucide@latest'
+  'https://unpkg.com/lucide@latest',
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js'
 ];
 
 // Instalação: Armazena os recursos essenciais no cache

@@ -16,6 +16,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Bibliotecas para geração de PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
     <style>
         [v-cloak] {
             display: none;
@@ -210,6 +214,11 @@
                     <button @click="goHome"
                         class="p-3 bg-gray-200/50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
                         <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    </button>
+                    <!-- Novo Botão de PDF -->
+                    <button @click="exportTripPDF" title="Exportar Relatório PDF"
+                        class="p-3 bg-red-100 dark:bg-red-900/30 rounded-xl hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors text-red-600 dark:text-red-400">
+                        <i data-lucide="file-text" class="w-5 h-5"></i>
                     </button>
                     <div class="flex-grow flex bg-gray-200/50 dark:bg-gray-800/50 p-1 rounded-xl">
                         <button v-for="tab in tabs" :key="tab.id" @click="currentTab = tab.id" :title="tab.label"
@@ -1161,6 +1170,170 @@
                     link.click();
                 };
 
+                // Lógica de Geração de PDF Completo (Foco em Resumo Financeiro)
+                const exportTripPDF = () => {
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF();
+                    const trip = selectedTrip.value;
+
+                    // Estilos e Configurações
+                    const margin = 14;
+                    const pageWidth = doc.internal.pageSize.getWidth();
+                    const pageHeight = doc.internal.pageSize.getHeight();
+
+                    // --- CAPA / CABEÇALHO ---
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(18);
+                    doc.text(`TripPlanner: ${trip.location}`, margin, 20);
+                    
+                    doc.setFontSize(10);
+                    doc.setFont("helvetica", "normal");
+                    doc.text(`Relatório Gerado em: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR')}`, margin, 28);
+                    doc.text(`Duração: ${formatDate(trip.startDate)} - ${formatDate(trip.endDate)}`, margin, 34);
+
+                    let currentY = 45;
+
+                    // --- 1. RESUMO POR CATEGORIAS ---
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(14);
+                    doc.text("1. Resumo por Categorias", margin, currentY);
+                    currentY += 8;
+
+                    const catRows = Object.entries(categoryTotals.value).map(([cat, val]) => [cat, formatCurrency(val)]);
+                    catRows.push([{ content: 'TOTAL ACUMULADO', styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }, { content: formatCurrency(totalFinance.value), styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } }]);
+
+                    doc.autoTable({
+                        startY: currentY,
+                        head: [['Categoria', 'Total']],
+                        body: catRows,
+                        theme: 'striped',
+                        headStyles: { fillColor: [59, 130, 246] }
+                    });
+
+                    currentY = doc.lastAutoTable.finalY + 12;
+
+                    // --- 2. QUEM PAGOU O QUÊ (ACERTO DE CONTAS) ---
+                    if (currentY > pageHeight - 60) { doc.addPage(); currentY = 20; }
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(14);
+                    doc.text("2. Acerto de Contas (Rateio)", margin, currentY);
+                    currentY += 8;
+
+                    const personRows = Object.entries(financeSummary.value.byPerson).map(([name, val]) => {
+                        const fairShare = totalFinance.value / (trip.people.length || 1);
+                        const balance = val - fairShare;
+                        return [name, formatCurrency(val), formatCurrency(fairShare), { content: formatCurrency(balance), styles: { textColor: balance < 0 ? [220, 38, 38] : [22, 163, 74] } }];
+                    });
+
+                    doc.autoTable({
+                        startY: currentY,
+                        head: [['Participante', 'Total Pago', 'Custo Justo', 'Saldo']],
+                        body: personRows,
+                        theme: 'grid',
+                        headStyles: { fillColor: [75, 85, 99] }
+                    });
+
+                    currentY = doc.lastAutoTable.finalY + 8;
+                    
+                    doc.setFontSize(11);
+                    doc.text("Transferências Sugeridas:", margin, currentY);
+                    currentY += 6;
+                    
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(10);
+                    if (financeSummary.value.transfers.length > 0) {
+                        financeSummary.value.transfers.forEach(t => {
+                            doc.text(`- ${t.from} paga ${formatCurrency(t.amount)} para ${t.to}`, margin + 5, currentY);
+                            currentY += 5;
+                        });
+                    } else {
+                        doc.text("- Contas equilibradas. Nenhuma transferência pendente.", margin + 5, currentY);
+                        currentY += 5;
+                    }
+
+                    currentY += 10;
+
+                    // --- 3. LANÇAMENTOS COMPLETOS ---
+                    if (currentY > pageHeight - 40) { doc.addPage(); currentY = 20; }
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(14);
+                    doc.text("3. Detalhamento de Lançamentos", margin, currentY);
+                    currentY += 8;
+
+                    const allFinanceRows = [...trip.finance].sort((a, b) => new Date(a.date) - new Date(b.date)).map(i => [
+                        new Date(i.date + 'T00:00:00').toLocaleDateString('pt-BR'),
+                        i.name,
+                        i.paidBy,
+                        i.method,
+                        i.type,
+                        formatCurrency(i.value)
+                    ]);
+
+                    doc.autoTable({
+                        startY: currentY,
+                        head: [['Data', 'Descrição', 'Pagador', 'Método', 'Categoria', 'Valor']],
+                        body: allFinanceRows,
+                        theme: 'striped',
+                        styles: { fontSize: 8 },
+                        headStyles: { fillColor: [59, 130, 246] }
+                    });
+
+                    currentY = doc.lastAutoTable.finalY + 15;
+
+                    // --- 4. ROTEIRO ---
+                    if (currentY > pageHeight - 40) { doc.addPage(); currentY = 20; }
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(14);
+                    doc.text("4. Roteiro e Programação", margin, currentY);
+                    currentY += 8;
+
+                    const itineraryRows = [...trip.itinerary].sort((a, b) => new Date(a.date) - new Date(b.date) || a.time.localeCompare(b.time)).map(i => [
+                        new Date(i.date + 'T00:00:00').toLocaleDateString('pt-BR'),
+                        i.time,
+                        i.name,
+                        i.done ? 'Concluído' : 'Pendente'
+                    ]);
+
+                    doc.autoTable({
+                        startY: currentY,
+                        head: [['Data', 'Hora', 'Atividade', 'Status']],
+                        body: itineraryRows,
+                        theme: 'striped',
+                        headStyles: { fillColor: [75, 85, 99] }
+                    });
+
+                    currentY = doc.lastAutoTable.finalY + 15;
+
+                    // --- 5. DOCUMENTOS ---
+                    if (trip.docs && trip.docs.length > 0) {
+                        doc.addPage();
+                        currentY = 20;
+                        doc.setFont("helvetica", "bold");
+                        doc.setFontSize(14);
+                        doc.text("5. Anexos e Documentos", margin, currentY);
+                        currentY += 10;
+
+                        trip.docs.forEach((d, index) => {
+                            if (d.type.includes('image')) {
+                                if (currentY > pageHeight - 90) { doc.addPage(); currentY = 20; }
+                                doc.setFontSize(10);
+                                doc.setFont("helvetica", "bold");
+                                doc.text(`${index + 1}. ${d.name}`, margin, currentY);
+                                currentY += 5;
+                                try {
+                                    doc.addImage(d.data, 'JPEG', margin, currentY, 180, 100, undefined, 'FAST');
+                                    currentY += 110;
+                                } catch (e) {
+                                    doc.text("[Erro: Imagem incompatível]", margin, currentY);
+                                    currentY += 10;
+                                }
+                            }
+                        });
+                    }
+
+                    doc.save(`TripPlanner_Relatorio_${trip.location.replace(/\s+/g, '_')}.pdf`);
+                };
+
                 // Calcula o tamanho ocupado apenas pelos documentos das viagens atuais
                 const storageUsage = computed(() => {
                     let total = 0;
@@ -1199,7 +1372,7 @@
                 return {
                     trips, selectedTrip, currentTab, tabs, isDark, toggleDarkMode, displayTitle, settings,
                     showNewTripModal, formTrip, saveTrip, openEditTrip, selectTrip, goHome, closeTripModal,
-                    formatDate, formatCurrency, getDaysUntil, exportData, importData, exportFinanceToExcel,
+                    formatDate, formatCurrency, getDaysUntil, exportData, importData, exportFinanceToExcel, exportTripPDF,
                     activeAddModal, openAddModal, openEditItem, isEditing, formItem, saveItem,
                     triggerDelete, executeDelete, showDeleteConfirm, deleteContext,
                     groupedFinance, totalFinance, categoryTotals, financeSummary, getCategoryIcon, getCategoryColor,
