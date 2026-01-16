@@ -225,8 +225,15 @@
                     <div v-if="currentTab === 'finance'">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="font-bold text-lg">Gastos</h3>
-                            <button @click="openAddModal('finance')" class="bg-primary text-white p-2 rounded-lg"><i
-                                    data-lucide="plus" class="w-4 h-4"></i></button>
+                            <div class="flex gap-2">
+                                <button @click="exportFinanceToExcel" title="Exportar Excel"
+                                    class="bg-emerald-600 text-white p-2 rounded-lg">
+                                    <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                                </button>
+                                <button @click="openAddModal('finance')" class="bg-primary text-white p-2 rounded-lg">
+                                    <i data-lucide="plus" class="w-4 h-4"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <div v-for="(group, date) in groupedFinance" :key="date" class="mb-4">
@@ -1126,6 +1133,34 @@
                     }; r.readAsText(e.target.files[0]);
                 };
 
+                // Funcionalidade de exportar financeiro para Excel (CSV)
+                const exportFinanceToExcel = () => {
+                    if (!selectedTrip.value || !selectedTrip.value.finance.length) return;
+
+                    const headers = ['Data', 'Item', 'Valor', 'Pago por', 'Método', 'Categoria'];
+                    const rows = selectedTrip.value.finance.map(item => [
+                        item.date,
+                        item.name,
+                        item.value.toString().replace('.', ','),
+                        item.paidBy,
+                        item.method,
+                        item.type
+                    ]);
+
+                    // BOM para UTF-8 e separador ";" para Excel BR
+                    const csvContent = "\uFEFF" + [
+                        headers.join(';'),
+                        ...rows.map(r => r.join(';'))
+                    ].join('\n');
+
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `Financeiro_${selectedTrip.value.location}_${new Date().toISOString().split('T')[0]}.csv`;
+                    link.click();
+                };
+
                 // Calcula o tamanho ocupado apenas pelos documentos das viagens atuais
                 const storageUsage = computed(() => {
                     let total = 0;
@@ -1164,7 +1199,7 @@
                 return {
                     trips, selectedTrip, currentTab, tabs, isDark, toggleDarkMode, displayTitle, settings,
                     showNewTripModal, formTrip, saveTrip, openEditTrip, selectTrip, goHome, closeTripModal,
-                    formatDate, formatCurrency, getDaysUntil, exportData, importData,
+                    formatDate, formatCurrency, getDaysUntil, exportData, importData, exportFinanceToExcel,
                     activeAddModal, openAddModal, openEditItem, isEditing, formItem, saveItem,
                     triggerDelete, executeDelete, showDeleteConfirm, deleteContext,
                     groupedFinance, totalFinance, categoryTotals, financeSummary, getCategoryIcon, getCategoryColor,
