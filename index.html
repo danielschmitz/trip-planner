@@ -1170,7 +1170,7 @@
                     link.click();
                 };
 
-                // Lógica de Geração de PDF Completo (Foco em Resumo Financeiro)
+                // Lógica de Geração de PDF Completo (Ajuste de Fotos e Resumo de Links)
                 const exportTripPDF = () => {
                     const { jsPDF } = window.jspdf;
                     const doc = new jsPDF();
@@ -1212,7 +1212,7 @@
 
                     currentY = doc.lastAutoTable.finalY + 12;
 
-                    // --- 2. QUEM PAGOU O QUÊ (ACERTO DE CONTAS) ---
+                    // --- 2. ACERTO DE CONTAS (RATEIO) ---
                     if (currentY > pageHeight - 60) { doc.addPage(); currentY = 20; }
                     doc.setFont("helvetica", "bold");
                     doc.setFontSize(14);
@@ -1304,27 +1304,74 @@
 
                     currentY = doc.lastAutoTable.finalY + 15;
 
-                    // --- 5. DOCUMENTOS ---
+                    // --- 5. RESUMO DE LINKS (ADICIONADO) ---
+                    if (trip.links && trip.links.length > 0) {
+                        if (currentY > pageHeight - 40) { doc.addPage(); currentY = 20; }
+                        doc.setFont("helvetica", "bold");
+                        doc.setFontSize(14);
+                        doc.text("5. Links Úteis", margin, currentY);
+                        currentY += 8;
+
+                        const linkRows = trip.links.map(l => [l.category || 'Geral', l.name, l.url]);
+
+                        doc.autoTable({
+                            startY: currentY,
+                            head: [['Categoria', 'Título', 'Link / URL']],
+                            body: linkRows,
+                            theme: 'grid',
+                            styles: { fontSize: 8 },
+                            headStyles: { fillColor: [59, 130, 246] }
+                        });
+
+                        currentY = doc.lastAutoTable.finalY + 15;
+                    }
+
+                    // --- 6. DOCUMENTOS (FOTOS AJUSTADAS) ---
                     if (trip.docs && trip.docs.length > 0) {
                         doc.addPage();
                         currentY = 20;
                         doc.setFont("helvetica", "bold");
                         doc.setFontSize(14);
-                        doc.text("5. Anexos e Documentos", margin, currentY);
+                        doc.text("6. Anexos e Documentos", margin, currentY);
                         currentY += 10;
 
                         trip.docs.forEach((d, index) => {
                             if (d.type.includes('image')) {
-                                if (currentY > pageHeight - 90) { doc.addPage(); currentY = 20; }
-                                doc.setFontSize(10);
-                                doc.setFont("helvetica", "bold");
-                                doc.text(`${index + 1}. ${d.name}`, margin, currentY);
-                                currentY += 5;
                                 try {
-                                    doc.addImage(d.data, 'JPEG', margin, currentY, 180, 100, undefined, 'FAST');
-                                    currentY += 110;
+                                    const imgProps = doc.getImageProperties(d.data);
+                                    const maxWidth = 180;
+                                    const maxHeight = 120;
+                                    
+                                    // Cálculo de proporção para não esticar
+                                    let width = imgProps.width;
+                                    let height = imgProps.height;
+                                    const ratio = width / height;
+
+                                    if (width > maxWidth) {
+                                        width = maxWidth;
+                                        height = width / ratio;
+                                    }
+                                    if (height > maxHeight) {
+                                        height = maxHeight;
+                                        width = height * ratio;
+                                    }
+
+                                    // Verifica se cabe na página com o novo tamanho
+                                    if (currentY + height + 10 > pageHeight) {
+                                        doc.addPage();
+                                        currentY = 20;
+                                    }
+
+                                    doc.setFontSize(10);
+                                    doc.setFont("helvetica", "bold");
+                                    doc.text(`${index + 1}. ${d.name}`, margin, currentY);
+                                    currentY += 5;
+
+                                    doc.addImage(d.data, 'JPEG', margin, currentY, width, height, undefined, 'FAST');
+                                    currentY += height + 15;
                                 } catch (e) {
-                                    doc.text("[Erro: Imagem incompatível]", margin, currentY);
+                                    doc.setFontSize(10);
+                                    doc.text(`[Erro ao carregar imagem: ${d.name}]`, margin, currentY);
                                     currentY += 10;
                                 }
                             }
