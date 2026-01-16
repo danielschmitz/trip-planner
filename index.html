@@ -197,6 +197,11 @@
                         Limpar Todos os Dados
                     </button>
                 </div>
+                <div class="mt-4 text-center">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                        {{ swVersion }}
+                    </span>
+                </div>
             </div>
 
             <!-- Trip Details Screen -->
@@ -789,6 +794,12 @@
                             console.warn('Service Worker não suportado neste ambiente.');
                         });
                     }
+
+                    // Aguarda o SW estar pronto para pedir a versão
+                    navigator.serviceWorker.ready.then(() => {
+                        fetchSwVersion();
+                    });
+
                 });
 
                 const refreshApp = () => {
@@ -895,7 +906,7 @@
                     const ONE_MB = 500 * 1024;
                     if (file.size > ONE_MB) {
                         const sizeInMB = (file.size / ONE_MB).toFixed(2);
-                        alert(`Atenção: Este arquivo é muito grande (${sizeInMB/2}MB). \nO limite recomendado para evitar travamentos é de 500KB por foto.`);
+                        alert(`Atenção: Este arquivo é muito grande (${sizeInMB / 2}MB). \nO limite recomendado para evitar travamentos é de 500KB por foto.`);
                         return;
                     }
 
@@ -1128,6 +1139,20 @@
                     return Math.min((storageUsage.value / limit) * 100, 100);
                 });
 
+                const swVersion = ref('');
+
+                const fetchSwVersion = () => {
+                    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                        const messageChannel = new MessageChannel();
+                        messageChannel.port1.onmessage = (event) => {
+                            swVersion.value = event.data.version;
+                        };
+                        navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' }, [messageChannel.port2]);
+                    } else {
+                        swVersion.value = 'n/a';
+                    }
+                };
+
                 return {
                     trips, selectedTrip, currentTab, tabs, isDark, toggleDarkMode, displayTitle, settings,
                     showNewTripModal, formTrip, saveTrip, openEditTrip, selectTrip, goHome, closeTripModal,
@@ -1141,7 +1166,7 @@
                     addListSetting, removeListSetting, newSettingValue, newPaymentValue, newExpenseValue, newLinkTypeValue,
                     startClearData, goToClearStep2, confirmClearAll, showClearConfirmStep1, showClearConfirmStep2,
                     toggleCollapse, isCollapsed,
-                    updateAvailable, refreshApp, storageUsageMB, storagePercent
+                    updateAvailable, refreshApp, storageUsageMB, storagePercent, swVersion
                 };
             }
         }).mount('#app');
