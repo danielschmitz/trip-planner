@@ -3,7 +3,7 @@
  * Responsável pelo cache offline e gestão de atualizações.
  */
 
-const CACHE_NAME = 'tripplanner-v2';
+const CACHE_NAME = 'tripplanner-v3';
 const ASSETS = [
   './',
   './index.html',

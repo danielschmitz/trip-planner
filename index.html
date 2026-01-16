@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TripPlanner - Seu Gerenciador de Viagens</title>
-    
+
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#3b82f6">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,18 +17,62 @@
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        [v-cloak] { display: none; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-        .animate-fade-in { animation: fade-in 0.2s ease-out; }
-        
-        @keyframes slide-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .animate-slide-up { animation: slide-up 0.3s ease-out; }
+        [v-cloak] {
+            display: none;
+        }
 
-        .collapse-enter-active, .collapse-leave-active { transition: all 0.3s ease; max-height: 1000px; overflow: hidden; }
-        .collapse-enter-from, .collapse-leave-to { max-height: 0; opacity: 0; transform: translateY(-10px); }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        @keyframes fade-in {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .animate-fade-in {
+            animation: fade-in 0.2s ease-out;
+        }
+
+        @keyframes slide-up {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .animate-slide-up {
+            animation: slide-up 0.3s ease-out;
+        }
+
+        .collapse-enter-active,
+        .collapse-leave-active {
+            transition: all 0.3s ease;
+            max-height: 1000px;
+            overflow: hidden;
+        }
+
+        .collapse-enter-from,
+        .collapse-leave-to {
+            max-height: 0;
+            opacity: 0;
+            transform: translateY(-10px);
+        }
     </style>
     <script>
         tailwind.config = {
@@ -40,840 +85,1067 @@
         }
     </script>
 </head>
+
 <body class="bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 min-h-screen transition-colors duration-200">
 
-<div id="app" v-cloak class="max-w-md mx-auto min-h-screen flex flex-col pb-20">
-    <!-- Notificação de Atualização (PWA Update) -->
-    <div v-if="updateAvailable" class="fixed top-4 left-4 right-4 z-[200] animate-slide-up">
-        <div class="bg-blue-600 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between border border-white/20">
-            <div class="flex items-center gap-3">
-                <i data-lucide="refresh-cw" class="w-5 h-5 animate-spin"></i>
-                <span class="text-sm font-bold">Nova versão disponível!</span>
+    <div id="app" v-cloak class="max-w-md mx-auto min-h-screen flex flex-col pb-20">
+        <!-- Notificação de Atualização (PWA Update) -->
+        <div v-if="updateAvailable" class="fixed top-4 left-4 right-4 z-[200] animate-slide-up">
+            <div
+                class="bg-blue-600 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between border border-white/20">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="refresh-cw" class="w-5 h-5 animate-spin"></i>
+                    <span class="text-sm font-bold">Nova versão disponível!</span>
+                </div>
+                <button @click="refreshApp"
+                    class="bg-white text-blue-600 px-4 py-1.5 rounded-xl text-xs font-black uppercase shadow-sm">
+                    Atualizar
+                </button>
             </div>
-            <button @click="refreshApp" class="bg-white text-blue-600 px-4 py-1.5 rounded-xl text-xs font-black uppercase shadow-sm">
-                Atualizar
+        </div>
+
+        <!-- Header Dinâmico -->
+        <header
+            class="p-4 flex justify-between items-center sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md z-40 border-b dark:border-gray-800 h-16">
+            <div class="flex items-center gap-2 cursor-pointer truncate flex-grow mr-2" @click="goHome">
+                <div class="bg-primary p-2 rounded-lg text-white shrink-0">
+                    <i data-lucide="plane" class="w-5 h-5"></i>
+                </div>
+                <h1 class="font-bold text-lg tracking-tight truncate">
+                    {{ displayTitle }}
+                </h1>
+            </div>
+            <button @click="toggleDarkMode" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 shrink-0">
+                <i :data-lucide="isDark ? 'sun' : 'moon'" class="w-5 h-5"></i>
             </button>
-        </div>
-    </div>
+        </header>
 
-    <!-- Header Dinâmico -->
-    <header class="p-4 flex justify-between items-center sticky top-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md z-40 border-b dark:border-gray-800 h-16">
-        <div class="flex items-center gap-2 cursor-pointer truncate flex-grow mr-2" @click="goHome">
-            <div class="bg-primary p-2 rounded-lg text-white shrink-0">
-                <i data-lucide="plane" class="w-5 h-5"></i>
-            </div>
-            <h1 class="font-bold text-lg tracking-tight truncate">
-                {{ displayTitle }}
-            </h1>
-        </div>
-        <button @click="toggleDarkMode" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 shrink-0">
-            <i :data-lucide="isDark ? 'sun' : 'moon'" class="w-5 h-5"></i>
-        </button>
-    </header>
+        <main class="flex-grow p-4">
+            <!-- Home Screen -->
+            <div v-if="!selectedTrip">
+                <div class="flex gap-2 mb-6">
+                    <button @click="showNewTripModal = true"
+                        class="flex-grow flex items-center justify-center gap-2 bg-primary text-white py-3 rounded-xl font-semibold shadow-lg shadow-primary/30">
+                        <i data-lucide="plus" class="w-5 h-5"></i> Nova Viagem
+                    </button>
+                    <button @click="exportData" title="Exportar"
+                        class="p-3 bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700">
+                        <i data-lucide="download" class="w-5 h-5 text-gray-600 dark:text-gray-400"></i>
+                    </button>
+                    <label class="p-3 bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 cursor-pointer">
+                        <i data-lucide="upload" class="w-5 h-5 text-gray-600 dark:text-gray-400"></i>
+                        <input type="file" class="hidden" @change="importData" accept=".json">
+                    </label>
+                </div>
 
-    <main class="flex-grow p-4">
-        <!-- Home Screen -->
-        <div v-if="!selectedTrip">
-            <div class="flex gap-2 mb-6">
-                <button @click="showNewTripModal = true" class="flex-grow flex items-center justify-center gap-2 bg-primary text-white py-3 rounded-xl font-semibold shadow-lg shadow-primary/30">
-                    <i data-lucide="plus" class="w-5 h-5"></i> Nova Viagem
-                </button>
-                <button @click="exportData" title="Exportar" class="p-3 bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700">
-                    <i data-lucide="download" class="w-5 h-5 text-gray-600 dark:text-gray-400"></i>
-                </button>
-                <label class="p-3 bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 cursor-pointer">
-                    <i data-lucide="upload" class="w-5 h-5 text-gray-600 dark:text-gray-400"></i>
-                    <input type="file" class="hidden" @change="importData" accept=".json">
-                </label>
-            </div>
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-4">Minhas Viagens</h2>
+                <div v-if="trips.length === 0"
+                    class="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+                    <i data-lucide="map" class="w-12 h-12 mx-auto mb-4 text-gray-300"></i>
+                    <p class="text-gray-500">Nenhuma viagem planejada ainda.</p>
+                </div>
 
-            <h2 class="text-sm font-semibold uppercase tracking-wider text-gray-500 mb-4">Minhas Viagens</h2>
-            <div v-if="trips.length === 0" class="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700">
-                <i data-lucide="map" class="w-12 h-12 mx-auto mb-4 text-gray-300"></i>
-                <p class="text-gray-500">Nenhuma viagem planejada ainda.</p>
-            </div>
-
-            <div class="space-y-4 mb-8">
-                <div v-for="trip in trips" :key="trip.id" @click="selectTrip(trip)" class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm active:scale-95 transition-transform cursor-pointer">
-                    <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <h3 class="font-bold text-lg">{{ trip.location }}</h3>
-                            <p class="text-sm text-gray-500 flex items-center gap-1">
-                                <i data-lucide="calendar" class="w-3 h-3"></i>
-                                {{ formatDate(trip.startDate) }} - {{ formatDate(trip.endDate) }}
-                            </p>
+                <div class="space-y-4 mb-8">
+                    <div v-for="trip in trips" :key="trip.id" @click="selectTrip(trip)"
+                        class="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm active:scale-95 transition-transform cursor-pointer">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <h3 class="font-bold text-lg">{{ trip.location }}</h3>
+                                <p class="text-sm text-gray-500 flex items-center gap-1">
+                                    <i data-lucide="calendar" class="w-3 h-3"></i>
+                                    {{ formatDate(trip.startDate) }} - {{ formatDate(trip.endDate) }}
+                                </p>
+                            </div>
+                            <div
+                                class="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-bold px-2 py-1 rounded-full shrink-0 ml-2">
+                                {{ getDaysUntil(trip.startDate) }}
+                            </div>
                         </div>
-                        <div class="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-bold px-2 py-1 rounded-full shrink-0 ml-2">
-                            {{ getDaysUntil(trip.startDate) }}
-                        </div>
-                    </div>
-                    <div class="flex justify-between items-center mt-4 border-t dark:border-gray-700 pt-3">
-                        <div class="flex gap-4">
-                           <div class="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold">
-                               <i data-lucide="dollar-sign" class="w-3 h-3"></i> {{ trip.finance?.length || 0 }}
-                           </div>
-                           <div class="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold">
-                               <i data-lucide="map-pin" class="w-3 h-3"></i> {{ trip.itinerary?.length || 0 }}
-                           </div>
-                        </div>
-                        <div class="flex gap-2">
-                            <button @click.stop="openEditTrip(trip)" class="p-2 text-gray-400 hover:text-primary transition-colors">
-                                <i data-lucide="pencil" class="w-4 h-4"></i>
-                            </button>
-                            <button @click.stop="triggerDelete('trips', trip.id, trip.location)" class="p-2 text-gray-400 hover:text-red-500 transition-colors">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
+                        <div class="flex justify-between items-center mt-4 border-t dark:border-gray-700 pt-3">
+                            <div class="flex gap-4">
+                                <div class="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold">
+                                    <i data-lucide="dollar-sign" class="w-3 h-3"></i> {{ trip.finance?.length || 0 }}
+                                </div>
+                                <div class="flex items-center gap-1 text-[10px] text-gray-400 uppercase font-bold">
+                                    <i data-lucide="map-pin" class="w-3 h-3"></i> {{ trip.itinerary?.length || 0 }}
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button @click.stop="openEditTrip(trip)"
+                                    class="p-2 text-gray-400 hover:text-primary transition-colors">
+                                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                                </button>
+                                <button @click.stop="triggerDelete('trips', trip.id, trip.location)"
+                                    class="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div v-if="!settings.hideDevButtons" class="mt-auto pt-6 border-t dark:border-gray-800 space-y-3 animate-fade-in text-center">
-                <button @click="handleTestData" class="w-full py-4 px-4 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold text-gray-600 dark:text-gray-400 transition-all border border-transparent active:scale-95">
-                    <i data-lucide="database" class="w-4 h-4"></i>
-                    {{ trips.length > 0 ? 'Substituir por Dados de Teste' : 'Incluir Dados de Teste' }}
-                </button>
-                <button v-if="trips.length > 0" @click="startClearData" class="w-full py-4 px-4 bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold text-red-500 transition-all border border-transparent active:scale-95">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    Limpar Todos os Dados
-                </button>
-            </div>
-        </div>
-
-        <!-- Trip Details Screen -->
-        <div v-else>
-            <div class="flex gap-2 mb-6">
-                <button @click="goHome" class="p-3 bg-gray-200/50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
-                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
-                </button>
-                <div class="flex-grow flex bg-gray-200/50 dark:bg-gray-800/50 p-1 rounded-xl">
-                    <button v-for="tab in tabs" :key="tab.id" @click="currentTab = tab.id" 
-                        :title="tab.label"
-                        :class="['flex-1 flex items-center justify-center py-2 rounded-lg transition-all', 
-                        currentTab === tab.id ? 'bg-white dark:bg-gray-700 shadow-sm text-primary scale-105' : 'text-gray-500']">
-                        <i :data-lucide="tab.icon" class="w-5 h-5"></i>
+                <div v-if="!settings.hideDevButtons"
+                    class="mt-auto pt-6 border-t dark:border-gray-800 space-y-3 animate-fade-in text-center">
+                    <button @click="handleTestData"
+                        class="w-full py-4 px-4 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold text-gray-600 dark:text-gray-400 transition-all border border-transparent active:scale-95">
+                        <i data-lucide="database" class="w-4 h-4"></i>
+                        {{ trips.length > 0 ? 'Substituir por Dados de Teste' : 'Incluir Dados de Teste' }}
+                    </button>
+                    <button v-if="trips.length > 0" @click="startClearData"
+                        class="w-full py-4 px-4 bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-2xl flex items-center justify-center gap-2 text-sm font-bold text-red-500 transition-all border border-transparent active:scale-95">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        Limpar Todos os Dados
                     </button>
                 </div>
             </div>
 
-            <div class="space-y-6">
-                <!-- Tab: Financeiro -->
-                <div v-if="currentTab === 'finance'">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-lg">Gastos</h3>
-                        <button @click="openAddModal('finance')" class="bg-primary text-white p-2 rounded-lg"><i data-lucide="plus" class="w-4 h-4"></i></button>
-                    </div>
-                    
-                    <div v-for="(group, date) in groupedFinance" :key="date" class="mb-4">
-                        <div @click="toggleCollapse('finance', date)" class="flex justify-between items-center border-b dark:border-gray-800 pb-1 mb-3 cursor-pointer hover:opacity-70 transition-opacity">
-                            <div class="flex items-center gap-2">
-                                <i :data-lucide="isCollapsed('finance', date) ? 'chevron-right' : 'chevron-down'" class="w-4 h-4 text-gray-400"></i>
-                                <span class="text-sm font-bold text-gray-500">{{ formatDate(date) }}</span>
-                            </div>
-                            <span class="text-sm font-bold text-primary">{{ formatCurrency(group.total) }}</span>
-                        </div>
-                        
-                        <div v-show="!isCollapsed('finance', date)" class="space-y-3 animate-fade-in">
-                            <div v-for="item in group.items" :key="item.id" class="flex justify-between items-center bg-white dark:bg-gray-800 p-3 rounded-xl border dark:border-gray-700 group">
-                                <div class="flex items-center gap-3 overflow-hidden">
-                                    <div :class="getCategoryColor(item.type)" class="p-2 rounded-lg text-white shrink-0">
-                                        <i :data-lucide="getCategoryIcon(item.type)" class="w-4 h-4"></i>
-                                    </div>
-                                    <div class="truncate">
-                                        <p class="font-semibold text-sm truncate">{{ item.name }}</p>
-                                        <p class="text-[10px] text-gray-500 uppercase truncate">{{ item.paidBy }} • {{ item.method }}</p>
-                                    </div>
-                                </div>
-                                <div class="text-right flex items-center gap-2 shrink-0 ml-2">
-                                    <p class="font-bold text-sm mr-2">{{ formatCurrency(item.value) }}</p>
-                                    <button @click="openEditItem('finance', item)" class="p-1 text-gray-400 hover:text-primary"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
-                                    <button @click="triggerDelete('finance', item.id, item.name)" class="p-1 text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div v-if="selectedTrip.finance.length > 0" class="mt-8 space-y-1.5 px-2 mb-2 animate-fade-in">
-                        <div v-for="(total, cat) in categoryTotals" :key="cat" class="flex justify-between text-[11px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest">
-                            <div class="flex items-center gap-1.5">
-                                <span class="w-1.5 h-1.5 rounded-full" :class="getCategoryColor(cat)"></span>
-                                {{ cat }}
-                            </div>
-                            <span>{{ formatCurrency(total) }}</span>
-                        </div>
-                    </div>
-
-                    <div class="p-4 bg-primary text-white rounded-2xl flex justify-between items-center shadow-lg shadow-primary/20">
-                        <span class="font-medium">Total Geral</span>
-                        <span class="text-xl font-black">{{ formatCurrency(totalFinance) }}</span>
-                    </div>
-
-                    <div v-if="selectedTrip.finance.length > 0" class="mt-6 p-5 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-4">
-                        <h4 class="text-sm font-bold text-gray-500 uppercase flex items-center gap-2">
-                            <i data-lucide="pie-chart" class="w-4 h-4 text-primary"></i> Acerto de Contas
-                        </h4>
-                        <div class="space-y-2 text-sm">
-                            <div v-for="(total, person) in financeSummary.byPerson" :key="person" class="flex justify-between items-center">
-                                <span class="text-gray-600 dark:text-gray-400">{{ person }} pagou</span>
-                                <span class="font-bold">{{ formatCurrency(total) }}</span>
-                            </div>
-                        </div>
-                        <div class="pt-4 border-t dark:border-gray-700 space-y-3 text-center">
-                            <p class="text-[10px] font-bold text-gray-400 uppercase">Transferências Sugeridas</p>
-                            <div v-if="financeSummary.transfers.length > 0" class="space-y-2">
-                                <div v-for="t in financeSummary.transfers" :key="t.from + t.to" class="bg-primary/5 dark:bg-primary/10 p-3 rounded-xl border border-primary/10">
-                                    <p class="text-sm">
-                                        <span class="font-bold text-primary">{{ t.from }}</span> -> <span class="font-bold text-primary">{{ t.to }}</span>: {{ formatCurrency(t.amount) }}
-                                    </p>
-                                </div>
-                            </div>
-                            <div v-else class="text-sm text-green-500 font-bold italic">Tudo equilibrado!</div>
-                        </div>
+            <!-- Trip Details Screen -->
+            <div v-else>
+                <div class="flex gap-2 mb-6">
+                    <button @click="goHome"
+                        class="p-3 bg-gray-200/50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
+                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    </button>
+                    <div class="flex-grow flex bg-gray-200/50 dark:bg-gray-800/50 p-1 rounded-xl">
+                        <button v-for="tab in tabs" :key="tab.id" @click="currentTab = tab.id" :title="tab.label"
+                            :class="['flex-1 flex items-center justify-center py-2 rounded-lg transition-all', 
+                        currentTab === tab.id ? 'bg-white dark:bg-gray-700 shadow-sm text-primary scale-105' : 'text-gray-500']">
+                            <i :data-lucide="tab.icon" class="w-5 h-5"></i>
+                        </button>
                     </div>
                 </div>
 
-                <!-- Tab: Roteiro -->
-                <div v-if="currentTab === 'itinerary'">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-lg">Programação</h3>
-                        <button @click="openAddModal('itinerary')" class="bg-primary text-white p-2 rounded-lg"><i data-lucide="plus" class="w-4 h-4"></i></button>
-                    </div>
-                    <div v-for="(group, date) in groupedItinerary" :key="date" class="mb-6 relative pl-4 border-l-2 border-primary/30">
-                        <div class="absolute w-3 h-3 bg-primary rounded-full -left-[7px] top-1 z-10"></div>
-                        <div @click="toggleCollapse('itinerary', date)" class="flex items-center gap-2 mb-3 cursor-pointer hover:opacity-70 transition-opacity">
-                            <h4 class="text-sm font-bold text-primary">{{ formatDate(date) }}</h4>
-                            <i :data-lucide="isCollapsed('itinerary', date) ? 'chevron-right' : 'chevron-down'" class="w-3 h-3 text-primary/50"></i>
+                <div class="space-y-6">
+                    <!-- Tab: Financeiro -->
+                    <div v-if="currentTab === 'finance'">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-lg">Gastos</h3>
+                            <button @click="openAddModal('finance')" class="bg-primary text-white p-2 rounded-lg"><i
+                                    data-lucide="plus" class="w-4 h-4"></i></button>
                         </div>
-                        <div v-show="!isCollapsed('itinerary', date)" class="space-y-4 animate-fade-in">
-                            <div v-for="item in group" :key="item.id" 
-                                :class="['bg-white dark:bg-gray-800 p-3 rounded-xl border dark:border-gray-700 flex justify-between items-start transition-all shadow-sm', item.done ? 'opacity-40 grayscale-[0.5]' : '']">
-                                <div class="flex gap-3 overflow-hidden">
-                                    <input type="checkbox" v-model="item.done" class="mt-1 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary shrink-0 cursor-pointer">
-                                    <div class="truncate">
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded shrink-0">{{ item.time }}</span>
-                                            <p :class="['font-semibold text-sm truncate', item.done ? 'line-through' : '']">{{ item.name }}</p>
+
+                        <div v-for="(group, date) in groupedFinance" :key="date" class="mb-4">
+                            <div @click="toggleCollapse('finance', date)"
+                                class="flex justify-between items-center border-b dark:border-gray-800 pb-1 mb-3 cursor-pointer hover:opacity-70 transition-opacity">
+                                <div class="flex items-center gap-2">
+                                    <i :data-lucide="isCollapsed('finance', date) ? 'chevron-right' : 'chevron-down'"
+                                        class="w-4 h-4 text-gray-400"></i>
+                                    <span class="text-sm font-bold text-gray-500">{{ formatDate(date) }}</span>
+                                </div>
+                                <span class="text-sm font-bold text-primary">{{ formatCurrency(group.total) }}</span>
+                            </div>
+
+                            <div v-show="!isCollapsed('finance', date)" class="space-y-3 animate-fade-in">
+                                <div v-for="item in group.items" :key="item.id"
+                                    class="flex justify-between items-center bg-white dark:bg-gray-800 p-3 rounded-xl border dark:border-gray-700 group">
+                                    <div class="flex items-center gap-3 overflow-hidden">
+                                        <div :class="getCategoryColor(item.type)"
+                                            class="p-2 rounded-lg text-white shrink-0">
+                                            <i :data-lucide="getCategoryIcon(item.type)" class="w-4 h-4"></i>
                                         </div>
-                                        <a v-if="item.link" :href="item.link" target="_blank" class="text-blue-500 text-[10px] flex items-center gap-1 mt-1 font-medium underline">Ver no mapa</a>
+                                        <div class="truncate">
+                                            <p class="font-semibold text-sm truncate">{{ item.name }}</p>
+                                            <p class="text-[10px] text-gray-500 uppercase truncate">{{ item.paidBy }} •
+                                                {{ item.method }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right flex items-center gap-2 shrink-0 ml-2">
+                                        <p class="font-bold text-sm mr-2">{{ formatCurrency(item.value) }}</p>
+                                        <button @click="openEditItem('finance', item)"
+                                            class="p-1 text-gray-400 hover:text-primary"><i data-lucide="pencil"
+                                                class="w-3.5 h-3.5"></i></button>
+                                        <button @click="triggerDelete('finance', item.id, item.name)"
+                                            class="p-1 text-gray-400 hover:text-red-500"><i data-lucide="trash-2"
+                                                class="w-3.5 h-3.5"></i></button>
                                     </div>
                                 </div>
-                                <div class="flex gap-1 shrink-0 ml-2">
-                                    <button @click="openEditItem('itinerary', item)" class="p-1 text-gray-400 hover:text-primary"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
-                                    <button @click="triggerDelete('itinerary', item.id, item.name)" class="p-1 text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                            </div>
+                        </div>
+
+                        <div v-if="selectedTrip.finance.length > 0" class="mt-8 space-y-1.5 px-2 mb-2 animate-fade-in">
+                            <div v-for="(total, cat) in categoryTotals" :key="cat"
+                                class="flex justify-between text-[11px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-widest">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="w-1.5 h-1.5 rounded-full" :class="getCategoryColor(cat)"></span>
+                                    {{ cat }}
+                                </div>
+                                <span>{{ formatCurrency(total) }}</span>
+                            </div>
+                        </div>
+
+                        <div
+                            class="p-4 bg-primary text-white rounded-2xl flex justify-between items-center shadow-lg shadow-primary/20">
+                            <span class="font-medium">Total Geral</span>
+                            <span class="text-xl font-black">{{ formatCurrency(totalFinance) }}</span>
+                        </div>
+
+                        <div v-if="selectedTrip.finance.length > 0"
+                            class="mt-6 p-5 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-4">
+                            <h4 class="text-sm font-bold text-gray-500 uppercase flex items-center gap-2">
+                                <i data-lucide="pie-chart" class="w-4 h-4 text-primary"></i> Acerto de Contas
+                            </h4>
+                            <div class="space-y-2 text-sm">
+                                <div v-for="(total, person) in financeSummary.byPerson" :key="person"
+                                    class="flex justify-between items-center">
+                                    <span class="text-gray-600 dark:text-gray-400">{{ person }} pagou</span>
+                                    <span class="font-bold">{{ formatCurrency(total) }}</span>
+                                </div>
+                            </div>
+                            <div class="pt-4 border-t dark:border-gray-700 space-y-3 text-center">
+                                <p class="text-[10px] font-bold text-gray-400 uppercase">Transferências Sugeridas</p>
+                                <div v-if="financeSummary.transfers.length > 0" class="space-y-2">
+                                    <div v-for="t in financeSummary.transfers" :key="t.from + t.to"
+                                        class="bg-primary/5 dark:bg-primary/10 p-3 rounded-xl border border-primary/10">
+                                        <p class="text-sm">
+                                            <span class="font-bold text-primary">{{ t.from }}</span> -> <span
+                                                class="font-bold text-primary">{{ t.to }}</span>: {{
+                                            formatCurrency(t.amount) }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div v-else class="text-sm text-green-500 font-bold italic">Tudo equilibrado!</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab: Roteiro -->
+                    <div v-if="currentTab === 'itinerary'">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-lg">Programação</h3>
+                            <button @click="openAddModal('itinerary')" class="bg-primary text-white p-2 rounded-lg"><i
+                                    data-lucide="plus" class="w-4 h-4"></i></button>
+                        </div>
+                        <div v-for="(group, date) in groupedItinerary" :key="date"
+                            class="mb-6 relative pl-4 border-l-2 border-primary/30">
+                            <div class="absolute w-3 h-3 bg-primary rounded-full -left-[7px] top-1 z-10"></div>
+                            <div @click="toggleCollapse('itinerary', date)"
+                                class="flex items-center gap-2 mb-3 cursor-pointer hover:opacity-70 transition-opacity">
+                                <h4 class="text-sm font-bold text-primary">{{ formatDate(date) }}</h4>
+                                <i :data-lucide="isCollapsed('itinerary', date) ? 'chevron-right' : 'chevron-down'"
+                                    class="w-3 h-3 text-primary/50"></i>
+                            </div>
+                            <div v-show="!isCollapsed('itinerary', date)" class="space-y-4 animate-fade-in">
+                                <div v-for="item in group" :key="item.id"
+                                    :class="['bg-white dark:bg-gray-800 p-3 rounded-xl border dark:border-gray-700 flex justify-between items-start transition-all shadow-sm', item.done ? 'opacity-40 grayscale-[0.5]' : '']">
+                                    <div class="flex gap-3 overflow-hidden">
+                                        <input type="checkbox" v-model="item.done"
+                                            class="mt-1 w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary shrink-0 cursor-pointer">
+                                        <div class="truncate">
+                                            <div class="flex items-center gap-2">
+                                                <span
+                                                    class="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded shrink-0">{{
+                                                    item.time }}</span>
+                                                <p
+                                                    :class="['font-semibold text-sm truncate', item.done ? 'line-through' : '']">
+                                                    {{ item.name }}</p>
+                                            </div>
+                                            <a v-if="item.link" :href="item.link" target="_blank"
+                                                class="text-blue-500 text-[10px] flex items-center gap-1 mt-1 font-medium underline">Ver
+                                                no mapa</a>
+                                        </div>
+                                    </div>
+                                    <div class="flex gap-1 shrink-0 ml-2">
+                                        <button @click="openEditItem('itinerary', item)"
+                                            class="p-1 text-gray-400 hover:text-primary"><i data-lucide="pencil"
+                                                class="w-3.5 h-3.5"></i></button>
+                                        <button @click="triggerDelete('itinerary', item.id, item.name)"
+                                            class="p-1 text-gray-400 hover:text-red-500"><i data-lucide="trash-2"
+                                                class="w-3.5 h-3.5"></i></button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Tabs: Links, Documentos, Configurações -->
-                <div v-if="currentTab === 'links'">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-lg">Links</h3>
-                        <button @click="openAddModal('links')" class="bg-primary text-white p-2 rounded-lg"><i data-lucide="plus" class="w-4 h-4"></i></button>
-                    </div>
-                    <div v-for="(links, type) in groupedLinks" :key="type" class="mb-4">
-                        <h4 class="text-xs font-bold uppercase text-gray-400 mb-2">{{ type }}</h4>
-                        <div class="space-y-2">
-                            <div v-for="link in links" :key="link.id" class="flex justify-between items-center bg-white dark:bg-gray-800 p-3 rounded-xl border dark:border-gray-700">
-                                <a :href="link.url" target="_blank" class="flex items-center gap-3 flex-grow truncate">
-                                    <i data-lucide="link-2" class="w-4 h-4 text-blue-500"></i>
-                                    <span class="text-sm font-medium truncate">{{ link.name }}</span>
-                                </a>
-                                <button @click="triggerDelete('links', link.id, link.name)" class="p-1 text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                    <!-- Tabs: Links, Documentos, Configurações -->
+                    <div v-if="currentTab === 'links'">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-lg">Links</h3>
+                            <button @click="openAddModal('links')" class="bg-primary text-white p-2 rounded-lg"><i
+                                    data-lucide="plus" class="w-4 h-4"></i></button>
+                        </div>
+                        <div v-for="(links, type) in groupedLinks" :key="type" class="mb-4">
+                            <h4 class="text-xs font-bold uppercase text-gray-400 mb-2">{{ type }}</h4>
+                            <div class="space-y-2">
+                                <div v-for="link in links" :key="link.id"
+                                    class="flex justify-between items-center bg-white dark:bg-gray-800 p-3 rounded-xl border dark:border-gray-700">
+                                    <a :href="link.url" target="_blank"
+                                        class="flex items-center gap-3 flex-grow truncate">
+                                        <i data-lucide="link-2" class="w-4 h-4 text-blue-500"></i>
+                                        <span class="text-sm font-medium truncate">{{ link.name }}</span>
+                                    </a>
+                                    <button @click="triggerDelete('links', link.id, link.name)"
+                                        class="p-1 text-gray-400 hover:text-red-500"><i data-lucide="trash-2"
+                                            class="w-3.5 h-3.5"></i></button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div v-if="currentTab === 'docs'">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-lg">Documentos</h3>
-                        <label class="bg-primary text-white p-2 rounded-lg cursor-pointer"><i data-lucide="upload-cloud" class="w-4 h-4"></i><input type="file" class="hidden" @change="handleDocSelection" accept="image/*,application/pdf"></label>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div v-for="doc in selectedTrip.docs" :key="doc.id" @click="viewDocument(doc)" class="bg-white dark:bg-gray-800 p-2 rounded-xl border dark:border-gray-700 cursor-pointer hover:border-primary/50 transition-colors">
-                            <div class="h-28 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center mb-2 overflow-hidden text-gray-400">
-                                <i v-if="doc.type.includes('pdf')" data-lucide="file-text" class="w-10 h-10 text-red-500"></i>
-                                <img v-else :src="doc.data" class="object-cover w-full h-full">
-                            </div>
-                            <div class="flex justify-between items-center px-1">
-                                <p class="text-[11px] font-bold truncate flex-grow text-center">{{ doc.name }}</p>
-                                <button @click.stop="triggerDelete('docs', doc.id, doc.name)" class="text-red-500 ml-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
-                            </div>
+                    <div v-if="currentTab === 'docs'">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-lg">Documentos</h3>
+                            <label class="bg-primary text-white p-2 rounded-lg cursor-pointer"><i
+                                    data-lucide="upload-cloud" class="w-4 h-4"></i><input type="file" class="hidden"
+                                    @change="handleDocSelection" accept="image/*,application/pdf"></label>
                         </div>
-                    </div>
-                </div>
-
-                <div v-if="currentTab === 'settings'" class="animate-fade-in space-y-6">
-                    <h3 class="font-bold text-lg">Configurações</h3>
-                    
-                    <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700 shadow-sm">
-                        <h4 class="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                            <i data-lucide="users" class="w-4 h-4 text-primary"></i> Participantes
-                        </h4>
-                        <div class="flex flex-wrap gap-2 mb-3">
-                            <div v-for="(p, idx) in selectedTrip.people" :key="idx" class="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2">
-                                {{ p }} <button @click="removeListSetting('people', idx)"><i data-lucide="x" class="w-3 h-3 text-red-400"></i></button>
+                        <div class="mb-6">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-[10px] font-bold uppercase text-gray-400">Espaço Utilizado </span>
+                                <span class="text-[10px] font-bold"
+                                    :class="storagePercent > 80 ? 'text-red-500' : 'text-primary'">
+                                    {{ storagePercent.toFixed(1) }}%
+                                </span>
                             </div>
-                        </div>
-                        <div class="flex gap-2">
-                            <input v-model="newSettingValue" @keyup.enter="addListSetting('people')" placeholder="Nome..." class="flex-grow bg-gray-50 dark:bg-gray-900 rounded-xl px-3 py-2 text-sm outline-none border">
-                            <button @click="addListSetting('people')" class="bg-primary text-white p-2 rounded-xl"><i data-lucide="plus" class="w-4 h-4"></i></button>
-                        </div>
-                    </div>
-
-                    <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700 shadow-sm">
-                        <h4 class="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                            <i data-lucide="credit-card" class="w-4 h-4 text-primary"></i> Pagamento
-                        </h4>
-                        <div class="flex flex-wrap gap-2 mb-3">
-                            <div v-for="(p, idx) in selectedTrip.paymentMethods" :key="idx" class="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2">
-                                {{ p }} <button @click="removeListSetting('paymentMethods', idx)"><i data-lucide="x" class="w-3 h-3 text-red-400"></i></button>
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
+                                <div class="h-full transition-all duration-500"
+                                    :class="storagePercent > 90 ? 'bg-red-500' : (storagePercent > 70 ? 'bg-yellow-500' : 'bg-primary')"
+                                    :style="{ width: storagePercent + '%' }">
+                                </div>
                             </div>
+                            <p v-if="storagePercent > 95" class="text-[9px] text-red-500 mt-1 font-bold">
+                                Atenção: Limite de armazenamento quase atingido!
+                            </p>
                         </div>
-                        <div class="flex gap-2">
-                            <input v-model="newPaymentValue" @keyup.enter="addListSetting('paymentMethods')" placeholder="Método..." class="flex-grow bg-gray-50 dark:bg-gray-900 rounded-xl px-3 py-2 text-sm outline-none border focus:border-primary">
-                            <button @click="addListSetting('paymentMethods')" class="bg-primary text-white p-2 rounded-xl"><i data-lucide="plus" class="w-4 h-4"></i></button>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div v-for="doc in selectedTrip.docs" :key="doc.id" @click="viewDocument(doc)"
+                                class="bg-white dark:bg-gray-800 p-2 rounded-xl border dark:border-gray-700 cursor-pointer hover:border-primary/50 transition-colors">
+                                <div
+                                    class="h-28 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center mb-2 overflow-hidden text-gray-400">
+                                    <i v-if="doc.type.includes('pdf')" data-lucide="file-text"
+                                        class="w-10 h-10 text-red-500"></i>
+                                    <img v-else :src="doc.data" class="object-cover w-full h-full">
+                                </div>
+                                <div class="flex justify-between items-center px-1">
+                                    <p class="text-[11px] font-bold truncate flex-grow text-center">{{ doc.name }}</p>
+                                    <button @click.stop="triggerDelete('docs', doc.id, doc.name)"
+                                        class="text-red-500 ml-1"><i data-lucide="trash-2"
+                                            class="w-3.5 h-3.5"></i></button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700 shadow-sm">
-                        <h4 class="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                            <i data-lucide="tags" class="w-4 h-4 text-primary"></i> Gastos
-                        </h4>
-                        <div class="flex flex-wrap gap-2 mb-3">
-                            <div v-for="(p, idx) in selectedTrip.expenseTypes" :key="idx" class="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2">
-                                {{ p }} <button @click="removeListSetting('expenseTypes', idx)"><i data-lucide="x" class="w-3 h-3 text-red-400"></i></button>
+                    <div v-if="currentTab === 'settings'" class="animate-fade-in space-y-6">
+                        <h3 class="font-bold text-lg">Configurações</h3>
+
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700 shadow-sm">
+                            <h4 class="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                                <i data-lucide="users" class="w-4 h-4 text-primary"></i> Participantes
+                            </h4>
+                            <div class="flex flex-wrap gap-2 mb-3">
+                                <div v-for="(p, idx) in selectedTrip.people" :key="idx"
+                                    class="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2">
+                                    {{ p }} <button @click="removeListSetting('people', idx)"><i data-lucide="x"
+                                            class="w-3 h-3 text-red-400"></i></button>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <input v-model="newSettingValue" @keyup.enter="addListSetting('people')"
+                                    placeholder="Nome..."
+                                    class="flex-grow bg-gray-50 dark:bg-gray-900 rounded-xl px-3 py-2 text-sm outline-none border">
+                                <button @click="addListSetting('people')"
+                                    class="bg-primary text-white p-2 rounded-xl"><i data-lucide="plus"
+                                        class="w-4 h-4"></i></button>
                             </div>
                         </div>
-                        <div class="flex gap-2">
-                            <input v-model="newExpenseValue" @keyup.enter="addListSetting('expenseTypes')" placeholder="Categoria..." class="flex-grow bg-gray-50 dark:bg-gray-900 rounded-xl px-3 py-2 text-sm outline-none border focus:border-primary">
-                            <button @click="addListSetting('expenseTypes')" class="bg-primary text-white p-2 rounded-xl"><i data-lucide="plus" class="w-4 h-4"></i></button>
-                        </div>
-                    </div>
 
-                    <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700 shadow-sm">
-                        <h4 class="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
-                            <i data-lucide="link" class="w-4 h-4 text-primary"></i> Links
-                        </h4>
-                        <div class="flex flex-wrap gap-2 mb-3">
-                            <div v-for="(p, idx) in selectedTrip.linkTypes" :key="idx" class="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2">
-                                {{ p }} <button @click="removeListSetting('linkTypes', idx)"><i data-lucide="x" class="w-3 h-3 text-red-400"></i></button>
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700 shadow-sm">
+                            <h4 class="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                                <i data-lucide="credit-card" class="w-4 h-4 text-primary"></i> Pagamento
+                            </h4>
+                            <div class="flex flex-wrap gap-2 mb-3">
+                                <div v-for="(p, idx) in selectedTrip.paymentMethods" :key="idx"
+                                    class="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2">
+                                    {{ p }} <button @click="removeListSetting('paymentMethods', idx)"><i data-lucide="x"
+                                            class="w-3 h-3 text-red-400"></i></button>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <input v-model="newPaymentValue" @keyup.enter="addListSetting('paymentMethods')"
+                                    placeholder="Método..."
+                                    class="flex-grow bg-gray-50 dark:bg-gray-900 rounded-xl px-3 py-2 text-sm outline-none border focus:border-primary">
+                                <button @click="addListSetting('paymentMethods')"
+                                    class="bg-primary text-white p-2 rounded-xl"><i data-lucide="plus"
+                                        class="w-4 h-4"></i></button>
                             </div>
                         </div>
-                        <div class="flex gap-2">
-                            <input v-model="newLinkTypeValue" @keyup.enter="addListSetting('linkTypes')" placeholder="Tipo..." class="flex-grow bg-gray-50 dark:bg-gray-900 rounded-xl px-3 py-2 text-sm outline-none border focus:border-primary">
-                            <button @click="addListSetting('linkTypes')" class="bg-primary text-white p-2 rounded-xl"><i data-lucide="plus" class="w-4 h-4"></i></button>
-                        </div>
-                    </div>
 
-                    <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700 shadow-sm">
-                        <h4 class="text-sm font-bold text-gray-500 uppercase mb-4 flex items-center gap-2">
-                            <i data-lucide="eye-off" class="w-4 h-4 text-primary"></i> Interface
-                        </h4>
-                        <label class="flex items-center gap-3 cursor-pointer group">
-                            <input type="checkbox" v-model="settings.hideDevButtons" class="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary transition-all">
-                            <span class="text-sm font-medium">Esconder os botões de dados de teste e excluir dados</span>
-                        </label>
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700 shadow-sm">
+                            <h4 class="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                                <i data-lucide="tags" class="w-4 h-4 text-primary"></i> Gastos
+                            </h4>
+                            <div class="flex flex-wrap gap-2 mb-3">
+                                <div v-for="(p, idx) in selectedTrip.expenseTypes" :key="idx"
+                                    class="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2">
+                                    {{ p }} <button @click="removeListSetting('expenseTypes', idx)"><i data-lucide="x"
+                                            class="w-3 h-3 text-red-400"></i></button>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <input v-model="newExpenseValue" @keyup.enter="addListSetting('expenseTypes')"
+                                    placeholder="Categoria..."
+                                    class="flex-grow bg-gray-50 dark:bg-gray-900 rounded-xl px-3 py-2 text-sm outline-none border focus:border-primary">
+                                <button @click="addListSetting('expenseTypes')"
+                                    class="bg-primary text-white p-2 rounded-xl"><i data-lucide="plus"
+                                        class="w-4 h-4"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700 shadow-sm">
+                            <h4 class="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center gap-2">
+                                <i data-lucide="link" class="w-4 h-4 text-primary"></i> Links
+                            </h4>
+                            <div class="flex flex-wrap gap-2 mb-3">
+                                <div v-for="(p, idx) in selectedTrip.linkTypes" :key="idx"
+                                    class="bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2">
+                                    {{ p }} <button @click="removeListSetting('linkTypes', idx)"><i data-lucide="x"
+                                            class="w-3 h-3 text-red-400"></i></button>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <input v-model="newLinkTypeValue" @keyup.enter="addListSetting('linkTypes')"
+                                    placeholder="Tipo..."
+                                    class="flex-grow bg-gray-50 dark:bg-gray-900 rounded-xl px-3 py-2 text-sm outline-none border focus:border-primary">
+                                <button @click="addListSetting('linkTypes')"
+                                    class="bg-primary text-white p-2 rounded-xl"><i data-lucide="plus"
+                                        class="w-4 h-4"></i></button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-2xl border dark:border-gray-700 shadow-sm">
+                            <h4 class="text-sm font-bold text-gray-500 uppercase mb-4 flex items-center gap-2">
+                                <i data-lucide="eye-off" class="w-4 h-4 text-primary"></i> Interface
+                            </h4>
+                            <label class="flex items-center gap-3 cursor-pointer group">
+                                <input type="checkbox" v-model="settings.hideDevButtons"
+                                    class="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary transition-all">
+                                <span class="text-sm font-medium">Esconder os botões de dados de teste e excluir
+                                    dados</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </main>
+        </main>
 
-    <!-- Modal Item Adicionar/Editar -->
-    <div v-if="activeAddModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-        <div class="bg-white dark:bg-gray-800 w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-slide-up">
-            <h3 class="text-xl font-bold mb-4">{{ isEditing ? 'Editar' : 'Adicionar' }} {{ getModalTitle }}</h3>
-            <div class="space-y-4">
-                <!-- FINANCE -->
-                <div v-if="activeAddModal === 'finance'" class="space-y-3">
-                    <input v-model="formItem.name" placeholder="Nome do gasto" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
-                    <input v-model.number="formItem.value" type="number" placeholder="Valor" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
-                    <input v-model="formItem.date" type="date" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
-                    <select v-model="formItem.paidBy" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
-                        <option v-for="person in selectedTrip.people" :key="person" :value="person">{{ person }}</option>
-                    </select>
-                    <div class="grid grid-cols-2 gap-2">
-                        <select v-model="formItem.method" class="bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
-                            <option v-for="m in selectedTrip.paymentMethods" :key="m" :value="m">{{ m }}</option>
+        <!-- Modal Item Adicionar/Editar -->
+        <div v-if="activeAddModal"
+            class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+            <div class="bg-white dark:bg-gray-800 w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-slide-up">
+                <h3 class="text-xl font-bold mb-4">{{ isEditing ? 'Editar' : 'Adicionar' }} {{ getModalTitle }}</h3>
+                <div class="space-y-4">
+                    <!-- FINANCE -->
+                    <div v-if="activeAddModal === 'finance'" class="space-y-3">
+                        <input v-model="formItem.name" placeholder="Nome do gasto"
+                            class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
+                        <input v-model.number="formItem.value" type="number" placeholder="Valor"
+                            class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
+                        <input v-model="formItem.date" type="date"
+                            class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
+                        <select v-model="formItem.paidBy"
+                            class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
+                            <option v-for="person in selectedTrip.people" :key="person" :value="person">{{ person }}
+                            </option>
                         </select>
-                        <select v-model="formItem.type" class="bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
-                            <option v-for="t in selectedTrip.expenseTypes" :key="t" :value="t">{{ t }}</option>
+                        <div class="grid grid-cols-2 gap-2">
+                            <select v-model="formItem.method"
+                                class="bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
+                                <option v-for="m in selectedTrip.paymentMethods" :key="m" :value="m">{{ m }}</option>
+                            </select>
+                            <select v-model="formItem.type"
+                                class="bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
+                                <option v-for="t in selectedTrip.expenseTypes" :key="t" :value="t">{{ t }}</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- ITINERARY -->
+                    <div v-if="activeAddModal === 'itinerary'" class="space-y-3">
+                        <input v-model="formItem.name" placeholder="Lugar"
+                            class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
+                        <input v-model="formItem.date" type="date"
+                            class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
+                        <input v-model="formItem.time" type="time"
+                            class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
+                        <input v-model="formItem.link" placeholder="Link"
+                            class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
+                    </div>
+                    <!-- LINKS -->
+                    <div v-if="activeAddModal === 'links'" class="space-y-3">
+                        <input v-model="formItem.name" placeholder="Título"
+                            class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
+                        <input v-model="formItem.url" placeholder="URL"
+                            class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
+                        <select v-model="formItem.category"
+                            class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
+                            <option v-for="cat in selectedTrip.linkTypes" :key="cat" :value="cat">{{ cat }}</option>
                         </select>
                     </div>
-                </div>
-                <!-- ITINERARY -->
-                <div v-if="activeAddModal === 'itinerary'" class="space-y-3">
-                    <input v-model="formItem.name" placeholder="Lugar" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
-                    <input v-model="formItem.date" type="date" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
-                    <input v-model="formItem.time" type="time" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
-                    <input v-model="formItem.link" placeholder="Link" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
-                </div>
-                <!-- LINKS -->
-                <div v-if="activeAddModal === 'links'" class="space-y-3">
-                    <input v-model="formItem.name" placeholder="Título" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
-                    <input v-model="formItem.url" placeholder="URL" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
-                    <select v-model="formItem.category" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
-                        <option v-for="cat in selectedTrip.linkTypes" :key="cat" :value="cat">{{ cat }}</option>
-                    </select>
-                </div>
-                <div class="flex gap-2 pt-4">
-                    <button @click="activeAddModal = null" class="flex-1 py-3 text-gray-500 font-bold">Cancelar</button>
-                    <button @click="saveItem" class="flex-1 bg-primary text-white py-3 rounded-xl font-bold">Salvar</button>
+                    <div class="flex gap-2 pt-4">
+                        <button @click="activeAddModal = null"
+                            class="flex-1 py-3 text-gray-500 font-bold">Cancelar</button>
+                        <button @click="saveItem"
+                            class="flex-1 bg-primary text-white py-3 rounded-xl font-bold">Salvar</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Modal de Confirmação de Exclusão (GENÉRICO) -->
-    <div v-if="showDeleteConfirm" class="fixed inset-0 bg-black/70 backdrop-blur-md z-[150] flex items-center justify-center p-6 animate-fade-in">
-        <div class="bg-white dark:bg-gray-800 w-full max-w-xs rounded-[32px] p-8 shadow-2xl text-center animate-slide-up border border-gray-100 dark:border-gray-700">
-            <div class="bg-red-50 dark:bg-red-900/20 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <i data-lucide="alert-triangle" class="w-10 h-10 text-red-500"></i>
+        <!-- Modal de Confirmação de Exclusão (GENÉRICO) -->
+        <div v-if="showDeleteConfirm"
+            class="fixed inset-0 bg-black/70 backdrop-blur-md z-[150] flex items-center justify-center p-6 animate-fade-in">
+            <div
+                class="bg-white dark:bg-gray-800 w-full max-w-xs rounded-[32px] p-8 shadow-2xl text-center animate-slide-up border border-gray-100 dark:border-gray-700">
+                <div
+                    class="bg-red-50 dark:bg-red-900/20 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i data-lucide="alert-triangle" class="w-10 h-10 text-red-500"></i>
+                </div>
+                <h3 class="text-xl font-black mb-2">Excluir item?</h3>
+                <p class="text-gray-500 text-sm mb-8 leading-relaxed">
+                    Tem certeza que deseja remover <span class="font-bold text-gray-900 dark:text-white">"{{
+                        deleteContext.title }}"</span>? Esta ação não pode ser desfeita.
+                </p>
+                <div class="flex flex-col gap-3">
+                    <button @click="executeDelete"
+                        class="w-full bg-red-500 hover:bg-red-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-red-500/20 active:scale-95 transition-all">
+                        Sim, Excluir
+                    </button>
+                    <button @click="showDeleteConfirm = false"
+                        class="w-full py-3 text-gray-400 font-bold hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                        Cancelar
+                    </button>
+                </div>
             </div>
-            <h3 class="text-xl font-black mb-2">Excluir item?</h3>
-            <p class="text-gray-500 text-sm mb-8 leading-relaxed">
-                Tem certeza que deseja remover <span class="font-bold text-gray-900 dark:text-white">"{{ deleteContext.title }}"</span>? Esta ação não pode ser desfeita.
-            </p>
-            <div class="flex flex-col gap-3">
-                <button @click="executeDelete" class="w-full bg-red-500 hover:bg-red-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-red-500/20 active:scale-95 transition-all">
-                    Sim, Excluir
+        </div>
+
+        <!-- Modal de Visualização de Documento (IMAGEM AMPLIADA) -->
+        <div v-if="viewingDoc"
+            class="fixed inset-0 bg-black/95 z-[100] flex flex-col items-center justify-center p-4 animate-fade-in">
+            <header class="w-full flex justify-between items-center text-white mb-4">
+                <h3 class="font-bold truncate px-4">{{ viewingDoc.name }}</h3>
+                <button @click="viewingDoc = null" class="p-2 bg-white/10 rounded-full hover:bg-white/20">
+                    <i data-lucide="x" class="w-6 h-6"></i>
                 </button>
-                <button @click="showDeleteConfirm = false" class="w-full py-3 text-gray-400 font-bold hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
-                    Cancelar
-                </button>
-            </div>
-        </div>
-    </div>
+            </header>
 
-    <!-- Modal de Visualização de Documento (IMAGEM AMPLIADA) -->
-    <div v-if="viewingDoc" class="fixed inset-0 bg-black/95 z-[100] flex flex-col items-center justify-center p-4 animate-fade-in">
-        <header class="w-full flex justify-between items-center text-white mb-4">
-            <h3 class="font-bold truncate px-4">{{ viewingDoc.name }}</h3>
-            <button @click="viewingDoc = null" class="p-2 bg-white/10 rounded-full hover:bg-white/20">
-                <i data-lucide="x" class="w-6 h-6"></i>
-            </button>
-        </header>
-        
-        <div class="flex-grow w-full flex items-center justify-center overflow-auto no-scrollbar">
-            <div v-if="viewingDoc.type.includes('pdf')" class="text-white text-center">
-                <i data-lucide="file-text" class="w-24 h-24 mx-auto mb-4 opacity-50"></i>
-                <p>O navegador não suporta prévia de PDF em base64.</p>
-                <p class="text-sm opacity-60">Use o botão de download abaixo.</p>
-            </div>
-            <img v-else :src="viewingDoc.data" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl">
-        </div>
-
-        <footer class="w-full p-6 flex justify-center gap-4">
-            <a :href="viewingDoc.data" :download="viewingDoc.name" class="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-xl font-bold">
-                <i data-lucide="download" class="w-5 h-5"></i> Baixar Arquivo
-            </a>
-            <button @click="viewingDoc = null" class="bg-gray-800 text-white px-6 py-3 rounded-xl font-bold">Fechar</button>
-        </footer>
-    </div>
-
-    <!-- Modals Diversos (Nova Viagem, Confirmações) -->
-    <div v-if="showNewTripModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-        <div class="bg-white dark:bg-gray-800 w-full max-sm rounded-3xl p-6 shadow-2xl animate-slide-up">
-            <h3 class="text-xl font-bold mb-4">{{ isEditing ? 'Editar Viagem' : 'Nova Viagem' }}</h3>
-            <div class="space-y-4">
-                <input v-model="formTrip.location" placeholder="Destino" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
-                <div class="flex gap-4">
-                    <input v-model="formTrip.startDate" type="date" class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
-                    <input v-model="formTrip.endDate" type="date" class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
+            <div class="flex-grow w-full flex items-center justify-center overflow-auto no-scrollbar">
+                <div v-if="viewingDoc.type.includes('pdf')" class="text-white text-center">
+                    <i data-lucide="file-text" class="w-24 h-24 mx-auto mb-4 opacity-50"></i>
+                    <p>O navegador não suporta prévia de PDF em base64.</p>
+                    <p class="text-sm opacity-60">Use o botão de download abaixo.</p>
                 </div>
-                <div class="flex gap-2 pt-4">
-                    <button @click="closeTripModal" class="flex-1 py-3 text-gray-500 font-bold">Cancelar</button>
-                    <button @click="saveTrip" class="flex-1 bg-primary text-white py-3 rounded-xl font-bold">Salvar</button>
+                <img v-else :src="viewingDoc.data" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl">
+            </div>
+
+            <footer class="w-full p-6 flex justify-center gap-4">
+                <a :href="viewingDoc.data" :download="viewingDoc.name"
+                    class="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-xl font-bold">
+                    <i data-lucide="download" class="w-5 h-5"></i> Baixar Arquivo
+                </a>
+                <button @click="viewingDoc = null"
+                    class="bg-gray-800 text-white px-6 py-3 rounded-xl font-bold">Fechar</button>
+            </footer>
+        </div>
+
+        <!-- Modals Diversos (Nova Viagem, Confirmações) -->
+        <div v-if="showNewTripModal"
+            class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
+            <div class="bg-white dark:bg-gray-800 w-full max-sm rounded-3xl p-6 shadow-2xl animate-slide-up">
+                <h3 class="text-xl font-bold mb-4">{{ isEditing ? 'Editar Viagem' : 'Nova Viagem' }}</h3>
+                <div class="space-y-4">
+                    <input v-model="formTrip.location" placeholder="Destino"
+                        class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
+                    <div class="flex gap-4">
+                        <input v-model="formTrip.startDate" type="date"
+                            class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
+                        <input v-model="formTrip.endDate" type="date"
+                            class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-xl p-3 text-sm outline-none">
+                    </div>
+                    <div class="flex gap-2 pt-4">
+                        <button @click="closeTripModal" class="flex-1 py-3 text-gray-500 font-bold">Cancelar</button>
+                        <button @click="saveTrip"
+                            class="flex-1 bg-primary text-white py-3 rounded-xl font-bold">Salvar</button>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- Dados Teste / Limpeza -->
+        <div v-if="showConfirmTestData"
+            class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <div class="bg-white dark:bg-gray-800 w-full max-w-xs rounded-3xl p-6 shadow-2xl text-center">
+                <h3 class="font-bold mb-4">Substituir Dados?</h3>
+                <div class="flex gap-2"><button @click="showConfirmTestData = false"
+                        class="flex-1 py-3 text-gray-500 font-bold">Não</button><button @click="confirmTestData"
+                        class="flex-1 bg-primary text-white py-3 rounded-xl font-bold">Sim</button></div>
+            </div>
+        </div>
+        <div v-if="showClearConfirmStep1"
+            class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
+            <div class="bg-white dark:bg-gray-800 w-full max-w-xs rounded-3xl p-6 shadow-2xl text-center">
+                <h3 class="font-bold mb-4">Limpar Tudo?</h3>
+                <div class="flex gap-2"><button @click="showClearConfirmStep1 = false"
+                        class="flex-1 py-3 text-gray-500 font-bold">Não</button><button @click="goToClearStep2"
+                        class="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold">Sim</button></div>
+            </div>
+        </div>
+        <div v-if="showClearConfirmStep2"
+            class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
+            <div
+                class="bg-white dark:bg-gray-800 w-full max-w-xs rounded-3xl p-6 shadow-2xl text-center border-4 border-red-500 animate-slide-up">
+                <h3 class="font-black mb-4 text-red-600">APAGAR DEFINITIVAMENTE?</h3>
+                <div class="flex flex-col gap-2"><button @click="confirmClearAll"
+                        class="bg-red-600 text-white py-4 rounded-xl font-black">SIM, APAGAR TUDO</button><button
+                        @click="showClearConfirmStep2 = false" class="py-3 text-gray-500 font-bold">CANCELAR</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Dados Teste / Limpeza -->
-    <div v-if="showConfirmTestData" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-gray-800 w-full max-w-xs rounded-3xl p-6 shadow-2xl text-center"><h3 class="font-bold mb-4">Substituir Dados?</h3><div class="flex gap-2"><button @click="showConfirmTestData = false" class="flex-1 py-3 text-gray-500 font-bold">Não</button><button @click="confirmTestData" class="flex-1 bg-primary text-white py-3 rounded-xl font-bold">Sim</button></div></div>
-    </div>
-    <div v-if="showClearConfirmStep1" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-gray-800 w-full max-w-xs rounded-3xl p-6 shadow-2xl text-center"><h3 class="font-bold mb-4">Limpar Tudo?</h3><div class="flex gap-2"><button @click="showClearConfirmStep1 = false" class="flex-1 py-3 text-gray-500 font-bold">Não</button><button @click="goToClearStep2" class="flex-1 bg-red-500 text-white py-3 rounded-xl font-bold">Sim</button></div></div>
-    </div>
-    <div v-if="showClearConfirmStep2" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-[120] flex items-center justify-center p-4">
-        <div class="bg-white dark:bg-gray-800 w-full max-w-xs rounded-3xl p-6 shadow-2xl text-center border-4 border-red-500 animate-slide-up"><h3 class="font-black mb-4 text-red-600">APAGAR DEFINITIVAMENTE?</h3><div class="flex flex-col gap-2"><button @click="confirmClearAll" class="bg-red-600 text-white py-4 rounded-xl font-black">SIM, APAGAR TUDO</button><button @click="showClearConfirmStep2 = false" class="py-3 text-gray-500 font-bold">CANCELAR</button></div></div>
-    </div>
-</div>
+    <script>
+        const { createApp, ref, computed, watch, onMounted, nextTick } = Vue;
 
-<script>
-    const { createApp, ref, computed, watch, onMounted, nextTick } = Vue;
+        createApp({
+            setup() {
+                const trips = ref([]);
+                const selectedTrip = ref(null);
+                const currentTab = ref('finance');
+                const isDark = ref(false);
+                const isEditing = ref(false);
+                const settings = ref({ hideDevButtons: false });
+                const collapsedDays = ref({});
+                const activeAddModal = ref(null);
+                const showNewTripModal = ref(false);
+                const showConfirmTestData = ref(false);
+                const showClearConfirmStep1 = ref(false);
+                const showClearConfirmStep2 = ref(false);
+                const viewingDoc = ref(null);
 
-    createApp({
-        setup() {
-            const trips = ref([]);
-            const selectedTrip = ref(null);
-            const currentTab = ref('finance');
-            const isDark = ref(false);
-            const isEditing = ref(false);
-            const settings = ref({ hideDevButtons: false });
-            const collapsedDays = ref({});
-            const activeAddModal = ref(null);
-            const showNewTripModal = ref(false);
-            const showConfirmTestData = ref(false);
-            const showClearConfirmStep1 = ref(false);
-            const showClearConfirmStep2 = ref(false);
-            const viewingDoc = ref(null);
+                // Controle de Atualização PWA
+                const updateAvailable = ref(false);
+                let registrationWaiting = null;
 
-            // Controle de Atualização PWA
-            const updateAvailable = ref(false);
-            let registrationWaiting = null;
+                // Confirmação de Exclusão
+                const showDeleteConfirm = ref(false);
+                const deleteContext = ref({ type: '', id: '', title: '' });
 
-            // Confirmação de Exclusão
-            const showDeleteConfirm = ref(false);
-            const deleteContext = ref({ type: '', id: '', title: '' });
+                const newSettingValue = ref('');
+                const newPaymentValue = ref('');
+                const newExpenseValue = ref('');
+                const newLinkTypeValue = ref('');
+                const formTrip = ref({ location: '', startDate: '', endDate: '' });
+                const formItem = ref({});
 
-            const newSettingValue = ref('');
-            const newPaymentValue = ref('');
-            const newExpenseValue = ref('');
-            const newLinkTypeValue = ref('');
-            const formTrip = ref({ location: '', startDate: '', endDate: '' });
-            const formItem = ref({});
-
-            const tabs = [
-                { id: 'finance', label: 'Financeiro', icon: 'dollar-sign' },
-                { id: 'itinerary', label: 'Roteiro', icon: 'map' },
-                { id: 'links', label: 'Links', icon: 'link-2' },
-                { id: 'docs', label: 'Documentos', icon: 'file-text' },
-                { id: 'settings', label: 'Configurações', icon: 'settings' }
-            ];
-
-            const displayTitle = computed(() => {
-                if (!selectedTrip.value) return 'TripPlanner';
-                const label = tabs.find(t => t.id === currentTab.value)?.label || '';
-                return `${selectedTrip.value.location} :: ${label}`;
-            });
-
-            onMounted(() => {
-                const savedTrips = localStorage.getItem('tripplanner_trips_v3');
-                trips.value = savedTrips ? JSON.parse(savedTrips) : [];
-                const savedCollapsed = localStorage.getItem('tripplanner_collapsed_v1');
-                collapsedDays.value = savedCollapsed ? JSON.parse(savedCollapsed) : {};
-                const savedGlobal = localStorage.getItem('tripplanner_global_settings');
-                if (savedGlobal) settings.value = JSON.parse(savedGlobal);
-
-                const lastTripId = localStorage.getItem('tripplanner_last_trip_id');
-                const lastTab = localStorage.getItem('tripplanner_last_tab');
-                if (lastTripId) {
-                    const trip = trips.value.find(t => t.id === lastTripId);
-                    if (trip) {
-                        selectedTrip.value = migrateTrip(trip);
-                        if (lastTab) currentTab.value = lastTab;
-                    }
-                }
-                const theme = localStorage.getItem('tripplanner_theme');
-                isDark.value = theme === 'dark' || (window.matchMedia('(prefers-color-scheme: dark)').matches && !theme);
-                applyTheme();
-                nextTick(() => lucide.createIcons());
-
-                // Registro do Service Worker com detecção de update e proteção de ambiente
-                if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
-                    navigator.serviceWorker.register('sw.js').then(reg => {
-                        reg.addEventListener('updatefound', () => {
-                            const newWorker = reg.installing;
-                            newWorker.addEventListener('statechange', () => {
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    registrationWaiting = reg.waiting;
-                                    updateAvailable.value = true;
-                                }
-                            });
-                        });
-                    }).catch(err => {
-                        // Silencia o erro se for apenas uma restrição de ambiente local/blob
-                        console.warn('Service Worker não suportado neste ambiente.');
-                    });
-                }
-            });
-
-            const refreshApp = () => {
-                if (registrationWaiting) {
-                    registrationWaiting.postMessage({ type: 'SKIP_WAITING' });
-                }
-                window.location.reload();
-            };
-
-            watch(trips, (nv) => localStorage.setItem('tripplanner_trips_v3', JSON.stringify(nv)), { deep: true });
-            watch(collapsedDays, (nv) => localStorage.setItem('tripplanner_collapsed_v1', JSON.stringify(nv)), { deep: true });
-            watch(settings, (nv) => localStorage.setItem('tripplanner_global_settings', JSON.stringify(nv)), { deep: true });
-            watch(selectedTrip, (nv) => {
-                if (nv) localStorage.setItem('tripplanner_last_trip_id', nv.id);
-                else localStorage.removeItem('tripplanner_last_trip_id');
-            });
-            watch(currentTab, (nv) => localStorage.setItem('tripplanner_last_tab', nv));
-            watch([selectedTrip, currentTab, showNewTripModal, activeAddModal, showConfirmTestData, showClearConfirmStep1, showClearConfirmStep2, viewingDoc, showDeleteConfirm, updateAvailable], () => nextTick(() => lucide.createIcons()));
-
-            const toggleDarkMode = () => { isDark.value = !isDark.value; localStorage.setItem('tripplanner_theme', isDark.value ? 'dark' : 'light'); applyTheme(); };
-            const applyTheme = () => document.documentElement.classList.toggle('dark', isDark.value);
-
-            const migrateTrip = (trip) => {
-                if (!trip.people) trip.people = ["Daniel", "Dina"];
-                if (!trip.paymentMethods) trip.paymentMethods = ["Dinheiro", "Pix", "Cartão"];
-                if (!trip.expenseTypes) trip.expenseTypes = ["Alimentação", "Transporte", "Hospedagem", "Turismo", "Compras", "Saúde", "Passagens", "Lazer", "Diversos"];
-                if (!trip.linkTypes) trip.linkTypes = ["Reservas", "Ingressos", "Transporte", "Dicas", "Mapas"];
-                if (trip.itinerary) trip.itinerary.forEach(i => { if (i.done === undefined) i.done = false; });
-                if (!trip.docs) trip.docs = [];
-                return trip;
-            };
-
-            const selectTrip = (trip) => selectedTrip.value = migrateTrip(trip);
-            const goHome = () => { selectedTrip.value = null; localStorage.removeItem('tripplanner_last_trip_id'); };
-
-            const saveTrip = () => {
-                if (!formTrip.value.location) return;
-                if (isEditing.value) {
-                    const idx = trips.value.findIndex(t => t.id === formTrip.value.id);
-                    trips.value[idx] = { ...formTrip.value };
-                } else {
-                    trips.value.push(migrateTrip({ id: Date.now().toString(), ...formTrip.value, finance: [], itinerary: [], links: [], docs: [] }));
-                }
-                closeTripModal();
-            };
-            const openEditTrip = (trip) => { isEditing.value = true; formTrip.value = { ...trip }; showNewTripModal.value = true; };
-            const closeTripModal = () => { showNewTripModal.value = false; isEditing.value = false; formTrip.value = { location: '', startDate: '', endDate: '' }; };
-            
-            // Lógica de Exclusão Melhorada
-            const triggerDelete = (type, id, title) => {
-                deleteContext.value = { type, id, title };
-                showDeleteConfirm.value = true;
-            };
-
-            const executeDelete = () => {
-                const { type, id } = deleteContext.value;
-                if (type === 'trips') {
-                    trips.value = trips.value.filter(t => t.id !== id);
-                    if (selectedTrip.value?.id === id) goHome();
-                } else {
-                    selectedTrip.value[type] = selectedTrip.value[type].filter(i => i.id !== id);
-                }
-                showDeleteConfirm.value = false;
-            };
-
-            const openAddModal = (type) => {
-                isEditing.value = false; activeAddModal.value = type; formItem.value = { id: Date.now().toString() };
-                if (type === 'finance') { 
-                    formItem.value.date = new Date().toISOString().split('T')[0]; 
-                    formItem.value.type = selectedTrip.value.expenseTypes[0]; 
-                    formItem.value.paidBy = selectedTrip.value.people[0]; 
-                    formItem.value.method = selectedTrip.value.paymentMethods[0]; 
-                }
-                if (type === 'itinerary') { formItem.value.date = selectedTrip.value.startDate; formItem.value.done = false; }
-                if (type === 'links') formItem.value.category = selectedTrip.value.linkTypes[0];
-            };
-
-            const openEditItem = (type, item) => { isEditing.value = true; activeAddModal.value = type; formItem.value = { ...item }; };
-            const saveItem = () => {
-                const list = selectedTrip.value[activeAddModal.value];
-                if (isEditing.value) { const idx = list.findIndex(i => i.id === formItem.value.id); list[idx] = { ...formItem.value }; }
-                else { list.push({ ...formItem.value }); }
-                activeAddModal.value = null;
-            };
-
-            const toggleCollapse = (tab, date) => { const k = `${tab}-${date}`; collapsedDays.value[k] = !collapsedDays.value[k]; };
-            const isCollapsed = (tab, date) => !!collapsedDays.value[`${tab}-${date}`];
-
-            const addListSetting = (key) => {
-                let v = '';
-                if(key==='people') { v=newSettingValue.value; newSettingValue.value=''; }
-                else if(key==='paymentMethods') { v=newPaymentValue.value; newPaymentValue.value=''; }
-                else if(key==='expenseTypes') { v=newExpenseValue.value; newExpenseValue.value=''; }
-                else if(key==='linkTypes') { v=newLinkTypeValue.value; newLinkTypeValue.value=''; }
-                if (v && v.trim() && !selectedTrip.value[key].includes(v.trim())) selectedTrip.value[key].push(v.trim());
-            };
-            const removeListSetting = (key, idx) => { if(selectedTrip.value[key].length > 1) selectedTrip.value[key].splice(idx, 1); };
-
-            const handleDocSelection = (e) => {
-                const f = e.target.files[0]; if (!f) return;
-                const r = new FileReader(); r.onload = (ev) => { 
-                    const n = prompt("Nome do documento:", f.name.split('.')[0]) || "Documento";
-                    if (!selectedTrip.value.docs) selectedTrip.value.docs = [];
-                    selectedTrip.value.docs.push({ id: Date.now().toString(), data: ev.target.result, type: f.type, name: n }); 
-                }; r.readAsDataURL(f);
-            };
-            const viewDocument = (doc) => viewingDoc.value = doc;
-
-            const startClearData = () => showClearConfirmStep1.value = true;
-            const goToClearStep2 = () => { showClearConfirmStep1.value = false; showClearConfirmStep2.value = true; };
-            const confirmClearAll = () => { trips.value = []; collapsedDays.value = {}; showClearConfirmStep2.value = false; alert('Limpo!'); goHome(); };
-
-            const handleTestData = () => { if (trips.value.length > 0) showConfirmTestData.value = true; else confirmTestData(); };
-            const confirmTestData = () => {
-                const now = new Date();
-                const f = (d) => { const x = new Date(now); x.setDate(x.getDate() + d); return x.toISOString().split('T')[0]; };
-                trips.value = [
-                    migrateTrip({
-                        id: 'nyc-real', location: 'Nova York, EUA', startDate: f(30), endDate: f(40), people: ["Daniel", "Dina"],
-                        finance: [
-                            { id: 'f1', name: 'Passagens Delta', value: 4200, date: f(30), paidBy: 'Daniel', method: 'Cartão', type: 'Passagens' },
-                            { id: 'f2', name: 'Hotel Marriott Times Square', value: 8500, date: f(30), paidBy: 'Dina', method: 'Cartão', type: 'Hospedagem' },
-                            { id: 'f3', name: 'Jantar Keens Steakhouse', value: 650, date: f(31), paidBy: 'Daniel', method: 'Cartão', type: 'Alimentação' },
-                            { id: 'f4', name: 'MetroCard Ilimitado', value: 180, date: f(31), paidBy: 'Daniel', method: 'Dinheiro', type: 'Transporte' },
-                            { id: 'f5', name: 'Edge Observatory', value: 220, date: f(32), paidBy: 'Dina', method: 'Pix', type: 'Turismo' },
-                            { id: 'f6', name: 'Apple Store Shopping', value: 5500, date: f(33), paidBy: 'Daniel', method: 'Cartão', type: 'Compras' },
-                            { id: 'f7', name: 'Shake Shack Lunch', value: 120, date: f(33), paidBy: 'Dina', method: 'Dinheiro', type: 'Alimentação' },
-                            { id: 'f8', name: 'Lion King Broadway', value: 950, date: f(34), paidBy: 'Daniel', method: 'Cartão', type: 'Lazer' },
-                            { id: 'f9', name: 'Seguro Allianz', value: 450, date: f(30), paidBy: 'Dina', method: 'Pix', type: 'Saúde' },
-                            { id: 'f10', name: 'Uber JFK', value: 350, date: f(40), paidBy: 'Daniel', method: 'Dinheiro', type: 'Transporte' }
-                        ],
-                        itinerary: [
-                            { id: 'i1', name: 'Voo GRU -> JFK', date: f(30), time: '22:00', done: true },
-                            { id: 'i2', name: 'Check-in Hotel', date: f(31), time: '14:00', done: false },
-                            { id: 'i3', name: 'Central Park Walk', date: f(31), time: '16:30', done: false },
-                            { id: 'i4', name: 'Museu História Natural', date: f(32), time: '10:00', done: false },
-                            { id: 'i5', name: 'High Line Sunset', date: f(32), time: '18:00', done: false },
-                            { id: 'i6', name: '5th Ave Shopping', date: f(33), time: '10:00', done: false },
-                            { id: 'i7', name: 'Statue of Liberty', date: f(34), time: '09:00', done: false },
-                            { id: 'i8', name: '9/11 Memorial', date: f(34), time: '14:00', done: false },
-                            { id: 'i9', name: 'Brooklyn Bridge', date: f(35), time: '17:00', done: false },
-                            { id: 'i10', name: 'Retorno JFK', date: f(40), time: '20:00', done: false }
-                        ],
-                        links: [
-                            { id: 'l1', name: 'Marriott Voucher', url: 'https://marriott.com', category: 'Reservas' },
-                            { id: 'l2', name: 'Bilhete Delta', url: 'https://delta.com', category: 'Transporte' },
-                            { id: 'l3', name: 'Guia Eater NYC', url: 'https://eater.com', category: 'Dicas' },
-                            { id: 'l4', name: 'CityPASS', url: 'https://citypass.com', category: 'Ingressos' },
-                            { id: 'l5', name: 'Mapa do Metrô', url: 'https://mta.info', category: 'Mapas' },
-                            { id: 'l6', name: 'Tickets Broadway', url: 'https://broadway.com', category: 'Reservas' },
-                            { id: 'l7', name: 'TimeOut Events', url: 'https://timeout.com', category: 'Dicas' },
-                            { id: 'l8', name: 'Woodbury Map', url: 'https://maps.google.com', category: 'Mapas' },
-                            { id: 'l9', name: 'Allianz Policy', url: 'https://allianz.com', category: 'Dicas' },
-                            { id: 'l10', name: 'Tempo NYC', url: 'https://accuweather.com', category: 'Dicas' }
-                        ], docs: []
-                    }),
-                    migrateTrip({
-                        id: 'lisboa-real', location: 'Lisboa, Portugal', startDate: f(100), endDate: f(110), people: ["Daniel", "Dina"],
-                        finance: [
-                            { id: 'f11', name: 'Voo TAP', value: 3800, date: f(100), paidBy: 'Dina', method: 'Cartão', type: 'Passagens' },
-                            { id: 'f12', name: 'Airbnb Alfama', value: 2900, date: f(100), paidBy: 'Daniel', method: 'Cartão', type: 'Hospedagem' },
-                            { id: 'f13', name: 'Jantar Ponto Final', value: 250, date: f(101), paidBy: 'Dina', method: 'Dinheiro', type: 'Alimentação' },
-                            { id: 'f14', name: 'Car Rental', value: 1200, date: f(102), paidBy: 'Daniel', method: 'Cartão', type: 'Transporte' },
-                            { id: 'f15', name: 'Castelo S. Jorge', value: 80, date: f(102), paidBy: 'Dina', method: 'Dinheiro', type: 'Turismo' },
-                            { id: 'f16', name: 'Vinhos Alentejo', value: 450, date: f(103), paidBy: 'Daniel', method: 'Pix', type: 'Compras' },
-                            { id: 'f17', name: 'Pastéis de Belém', value: 60, date: f(104), paidBy: 'Dina', method: 'Dinheiro', type: 'Alimentação' },
-                            { id: 'f18', name: 'Show de Fado', value: 300, date: f(104), paidBy: 'Daniel', method: 'Cartão', type: 'Lazer' },
-                            { id: 'f19', name: 'Trem Sintra', value: 45, date: f(105), paidBy: 'Dina', method: 'Dinheiro', type: 'Transporte' },
-                            { id: 'f20', name: 'Farmácia', value: 90, date: f(105), paidBy: 'Daniel', method: 'Pix', type: 'Saúde' }
-                        ],
-                        itinerary: [
-                            { id: 'i11', name: 'Chegada LIS', date: f(100), time: '08:00', done: true },
-                            { id: 'i12', name: 'Walk Alfama', date: f(101), time: '10:00', done: true },
-                            { id: 'i13', name: 'View Point Sra Monte', date: f(101), time: '17:30', done: false },
-                            { id: 'i14', name: 'LX Factory', date: f(102), time: '15:00', done: false },
-                            { id: 'i15', name: 'Torre Belem', date: f(103), time: '10:00', done: false },
-                            { id: 'i16', name: 'Jerónimos', date: f(103), time: '14:00', done: false },
-                            { id: 'i17', name: 'Cascais Trip', date: f(104), time: '09:00', done: false },
-                            { id: 'i18', name: 'Pena Sintra', date: f(105), time: '10:00', done: false },
-                            { id: 'i19', name: 'Regaleira', date: f(105), time: '14:30', done: false },
-                            { id: 'i20', name: 'Voo Retorno', date: f(110), time: '11:00', done: false }
-                        ],
-                        links: [
-                            { id: 'l11', name: 'Airbnb Voucher', url: 'https://airbnb.com', category: 'Reservas' },
-                            { id: 'l12', name: 'TAP Checkin', url: 'https://flytap.com', category: 'Transporte' },
-                            { id: 'l13', name: 'CP Comboios', url: 'https://cp.pt', category: 'Transporte' },
-                            { id: 'l14', name: 'Lisboa Guide', url: 'https://lisboa.com', category: 'Dicas' },
-                            { id: 'l15', name: 'Maps Portugal', url: 'https://google.com', category: 'Mapas' },
-                            { id: 'l16', name: 'Site Pasteis Belem', url: 'https://pasteisdebelem.pt', category: 'Dicas' },
-                            { id: 'l17', name: 'Sintra Tickets', url: 'https://parquesdesintra.pt', category: 'Ingressos' },
-                            { id: 'l18', name: 'TimeOut Lisboa', url: 'https://timeout.pt', category: 'Dicas' },
-                            { id: 'l19', name: 'Free Walking Tour', url: 'https://freetour.com', category: 'Dicas' },
-                            { id: 'l20', name: 'LX Factory Map', url: 'https://lxfactory.com', category: 'Mapas' }
-                        ], docs: []
-                    })
+                const tabs = [
+                    { id: 'finance', label: 'Financeiro', icon: 'dollar-sign' },
+                    { id: 'itinerary', label: 'Roteiro', icon: 'map' },
+                    { id: 'links', label: 'Links', icon: 'link-2' },
+                    { id: 'docs', label: 'Documentos', icon: 'file-text' },
+                    { id: 'settings', label: 'Configurações', icon: 'settings' }
                 ];
-                showConfirmTestData.value = false;
-                alert('Dados carregados com sucesso!');
-            };
 
-            const groupedFinance = computed(() => {
-                const g = {};
-                [...selectedTrip.value?.finance || []].sort((a,b)=>new Date(a.date)-new Date(b.date)).forEach(i => {
-                    if (!g[i.date]) g[i.date] = { items: [], total: 0 };
-                    g[i.date].items.push(i); g[i.date].total += (i.value || 0);
+                const displayTitle = computed(() => {
+                    if (!selectedTrip.value) return 'TripPlanner';
+                    const label = tabs.find(t => t.id === currentTab.value)?.label || '';
+                    return `${selectedTrip.value.location} :: ${label}`;
                 });
-                return g;
-            });
-            const totalFinance = computed(() => selectedTrip.value?.finance?.reduce((s,i)=>s+(i.value||0), 0) || 0);
-            const categoryTotals = computed(() => {
-                const t = {};
-                selectedTrip.value?.finance?.forEach(i => { const c = i.type || 'Diversos'; t[c] = (t[c] || 0) + Number(i.value || 0); });
-                return Object.fromEntries(Object.entries(t).sort(([,a],[,b]) => b - a));
-            });
-            const financeSummary = computed(() => {
-                if (!selectedTrip.value) return { byPerson: {}, transfers: [] };
-                const totals = {};
-                selectedTrip.value.people.forEach(p => totals[p] = 0);
-                let gt = 0;
-                selectedTrip.value.finance.forEach(i => { if (totals[i.paidBy] !== undefined) { const v = Number(i.value || 0); totals[i.paidBy] += v; gt += v; } });
-                const fair = gt / (selectedTrip.value.people.length || 1);
-                let balances = selectedTrip.value.people.map(p => ({ name: p, amount: totals[p] - fair }));
-                const trans = [];
-                let ds = balances.filter(b => b.amount < -0.01).sort((a,b) => a.amount - b.amount);
-                let cs = balances.filter(b => b.amount > 0.01).sort((a,b) => b.amount - a.amount);
-                let dIdx=0, cIdx=0;
-                while(dIdx < ds.length && cIdx < cs.length) {
-                    let amt = Math.min(Math.abs(ds[dIdx].amount), cs[cIdx].amount);
-                    if(amt > 0.01) trans.push({ from: ds[dIdx].name, to: cs[cIdx].name, amount: amt });
-                    ds[dIdx].amount += amt; cs[cIdx].amount -= amt;
-                    if(Math.abs(ds[dIdx].amount) < 0.01) dIdx++;
-                    if(Math.abs(cs[cIdx].amount) < 0.01) cIdx++;
-                }
-                return { byPerson: totals, transfers: trans };
-            });
 
-            const groupedItinerary = computed(() => {
-                const g = {};
-                [...selectedTrip.value?.itinerary || []].sort((a,b)=>new Date(a.date)-new Date(b.date) || a.time.localeCompare(b.time)).forEach(i => {
-                    if (!g[i.date]) g[i.date] = []; g[i.date].push(i);
+                onMounted(() => {
+                    const savedTrips = localStorage.getItem('tripplanner_trips_v3');
+                    trips.value = savedTrips ? JSON.parse(savedTrips) : [];
+                    const savedCollapsed = localStorage.getItem('tripplanner_collapsed_v1');
+                    collapsedDays.value = savedCollapsed ? JSON.parse(savedCollapsed) : {};
+                    const savedGlobal = localStorage.getItem('tripplanner_global_settings');
+                    if (savedGlobal) settings.value = JSON.parse(savedGlobal);
+
+                    const lastTripId = localStorage.getItem('tripplanner_last_trip_id');
+                    const lastTab = localStorage.getItem('tripplanner_last_tab');
+                    if (lastTripId) {
+                        const trip = trips.value.find(t => t.id === lastTripId);
+                        if (trip) {
+                            selectedTrip.value = migrateTrip(trip);
+                            if (lastTab) currentTab.value = lastTab;
+                        }
+                    }
+                    const theme = localStorage.getItem('tripplanner_theme');
+                    isDark.value = theme === 'dark' || (window.matchMedia('(prefers-color-scheme: dark)').matches && !theme);
+                    applyTheme();
+                    nextTick(() => lucide.createIcons());
+
+                    // Registro do Service Worker com detecção de update e proteção de ambiente
+                    if ('serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+                        navigator.serviceWorker.register('sw.js').then(reg => {
+                            reg.addEventListener('updatefound', () => {
+                                const newWorker = reg.installing;
+                                newWorker.addEventListener('statechange', () => {
+                                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                        registrationWaiting = reg.waiting;
+                                        updateAvailable.value = true;
+                                    }
+                                });
+                            });
+                        }).catch(err => {
+                            // Silencia o erro se for apenas uma restrição de ambiente local/blob
+                            console.warn('Service Worker não suportado neste ambiente.');
+                        });
+                    }
                 });
-                return g;
-            });
-            const groupedLinks = computed(() => {
-                const g = {};
-                selectedTrip.value?.links?.forEach(i => { const c = i.category || 'Outros'; if (!g[c]) g[c] = []; g[c].push(i); });
-                return g;
-            });
 
-            const formatDate = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'short'}) : '';
-            const formatCurrency = (v) => new Intl.NumberFormat('pt-BR', {style:'currency', currency:'BRL'}).format(v);
-            const getDaysUntil = (d) => { const diff = Math.ceil((new Date(d) - new Date()) / 86400000); return diff < 0 ? 'Concluída' : diff === 0 ? 'Hoje!' : `Faltam ${diff} dias`; };
-            const normalize = (s) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-            const getCategoryIcon = (t) => ({ alimentacao: 'utensils', transporte: 'car', turismo: 'camera', compras: 'shopping-bag', saude: 'plus-square', hospedagem: 'home', passagens: 'plane', lazer: 'ticket', diversos: 'tag' }[normalize(t)] || 'tag');
-            const getCategoryColor = (t) => ({ alimentacao: 'bg-orange-500', transporte: 'bg-blue-500', turismo: 'bg-purple-500', compras: 'bg-pink-500', saude: 'bg-red-500', hospedagem: 'bg-emerald-500', passagens: 'bg-cyan-600', lazer: 'bg-yellow-500', diversos: 'bg-gray-400' }[normalize(t)] || 'bg-gray-400');
-            const getModalTitle = computed(() => ({ finance: 'Gasto', itinerary: 'Item', links: 'Link' }[activeAddModal.value]));
-            const exportData = () => {
-                const b = new Blob([JSON.stringify({ trips: trips.value, collapsed: collapsedDays.value, settings: settings.value })], { type: 'application/json' });
-                const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = `TripPlanner_Backup.json`; a.click();
-            };
-            const importData = (e) => {
-                const r = new FileReader(); r.onload = (ev) => {
-                    try { const d = JSON.parse(ev.target.result); if(d.trips) { trips.value = d.trips; collapsedDays.value = d.collapsed || {}; settings.value = d.settings || { hideDevButtons: false }; } else if(Array.isArray(d)) { trips.value = d; } alert('Importado com sucesso!'); } catch(ex) { alert('Erro ao importar arquivo.'); }
-                }; r.readAsText(e.target.files[0]);
-            };
+                const refreshApp = () => {
+                    if (registrationWaiting) {
+                        registrationWaiting.postMessage({ type: 'SKIP_WAITING' });
+                    }
+                    window.location.reload();
+                };
 
-            return {
-                trips, selectedTrip, currentTab, tabs, isDark, toggleDarkMode, displayTitle, settings,
-                showNewTripModal, formTrip, saveTrip, openEditTrip, selectTrip, goHome, closeTripModal,
-                formatDate, formatCurrency, getDaysUntil, exportData, importData,
-                activeAddModal, openAddModal, openEditItem, isEditing, formItem, saveItem, 
-                triggerDelete, executeDelete, showDeleteConfirm, deleteContext,
-                groupedFinance, totalFinance, categoryTotals, financeSummary, getCategoryIcon, getCategoryColor,
-                groupedItinerary, groupedLinks, getModalTitle,
-                handleDocSelection, viewingDoc, viewDocument,
-                handleTestData, showConfirmTestData, confirmTestData,
-                addListSetting, removeListSetting, newSettingValue, newPaymentValue, newExpenseValue, newLinkTypeValue,
-                startClearData, goToClearStep2, confirmClearAll, showClearConfirmStep1, showClearConfirmStep2,
-                toggleCollapse, isCollapsed,
-                updateAvailable, refreshApp
-            };
-        }
-    }).mount('#app');
-</script>
+                watch(trips, (nv) => localStorage.setItem('tripplanner_trips_v3', JSON.stringify(nv)), { deep: true });
+                watch(collapsedDays, (nv) => localStorage.setItem('tripplanner_collapsed_v1', JSON.stringify(nv)), { deep: true });
+                watch(settings, (nv) => localStorage.setItem('tripplanner_global_settings', JSON.stringify(nv)), { deep: true });
+                watch(selectedTrip, (nv) => {
+                    if (nv) localStorage.setItem('tripplanner_last_trip_id', nv.id);
+                    else localStorage.removeItem('tripplanner_last_trip_id');
+                });
+                watch(currentTab, (nv) => localStorage.setItem('tripplanner_last_tab', nv));
+                watch([selectedTrip, currentTab, showNewTripModal, activeAddModal, showConfirmTestData, showClearConfirmStep1, showClearConfirmStep2, viewingDoc, showDeleteConfirm, updateAvailable], () => nextTick(() => lucide.createIcons()));
+
+                const toggleDarkMode = () => { isDark.value = !isDark.value; localStorage.setItem('tripplanner_theme', isDark.value ? 'dark' : 'light'); applyTheme(); };
+                const applyTheme = () => document.documentElement.classList.toggle('dark', isDark.value);
+
+                const migrateTrip = (trip) => {
+                    if (!trip.people) trip.people = ["Daniel", "Dina"];
+                    if (!trip.paymentMethods) trip.paymentMethods = ["Dinheiro", "Pix", "Cartão"];
+                    if (!trip.expenseTypes) trip.expenseTypes = ["Alimentação", "Transporte", "Hospedagem", "Turismo", "Compras", "Saúde", "Passagens", "Lazer", "Diversos"];
+                    if (!trip.linkTypes) trip.linkTypes = ["Reservas", "Ingressos", "Transporte", "Dicas", "Mapas"];
+                    if (trip.itinerary) trip.itinerary.forEach(i => { if (i.done === undefined) i.done = false; });
+                    if (!trip.docs) trip.docs = [];
+                    return trip;
+                };
+
+                const selectTrip = (trip) => selectedTrip.value = migrateTrip(trip);
+                const goHome = () => { selectedTrip.value = null; localStorage.removeItem('tripplanner_last_trip_id'); };
+
+                const saveTrip = () => {
+                    if (!formTrip.value.location) return;
+                    if (isEditing.value) {
+                        const idx = trips.value.findIndex(t => t.id === formTrip.value.id);
+                        trips.value[idx] = { ...formTrip.value };
+                    } else {
+                        trips.value.push(migrateTrip({ id: Date.now().toString(), ...formTrip.value, finance: [], itinerary: [], links: [], docs: [] }));
+                    }
+                    closeTripModal();
+                };
+                const openEditTrip = (trip) => { isEditing.value = true; formTrip.value = { ...trip }; showNewTripModal.value = true; };
+                const closeTripModal = () => { showNewTripModal.value = false; isEditing.value = false; formTrip.value = { location: '', startDate: '', endDate: '' }; };
+
+                // Lógica de Exclusão Melhorada
+                const triggerDelete = (type, id, title) => {
+                    deleteContext.value = { type, id, title };
+                    showDeleteConfirm.value = true;
+                };
+
+                const executeDelete = () => {
+                    const { type, id } = deleteContext.value;
+                    if (type === 'trips') {
+                        trips.value = trips.value.filter(t => t.id !== id);
+                        if (selectedTrip.value?.id === id) goHome();
+                    } else {
+                        selectedTrip.value[type] = selectedTrip.value[type].filter(i => i.id !== id);
+                    }
+                    showDeleteConfirm.value = false;
+                };
+
+                const openAddModal = (type) => {
+                    isEditing.value = false; activeAddModal.value = type; formItem.value = { id: Date.now().toString() };
+                    if (type === 'finance') {
+                        formItem.value.date = new Date().toISOString().split('T')[0];
+                        formItem.value.type = selectedTrip.value.expenseTypes[0];
+                        formItem.value.paidBy = selectedTrip.value.people[0];
+                        formItem.value.method = selectedTrip.value.paymentMethods[0];
+                    }
+                    if (type === 'itinerary') { formItem.value.date = selectedTrip.value.startDate; formItem.value.done = false; }
+                    if (type === 'links') formItem.value.category = selectedTrip.value.linkTypes[0];
+                };
+
+                const openEditItem = (type, item) => { isEditing.value = true; activeAddModal.value = type; formItem.value = { ...item }; };
+                const saveItem = () => {
+                    const list = selectedTrip.value[activeAddModal.value];
+                    if (isEditing.value) { const idx = list.findIndex(i => i.id === formItem.value.id); list[idx] = { ...formItem.value }; }
+                    else { list.push({ ...formItem.value }); }
+                    activeAddModal.value = null;
+                };
+
+                const toggleCollapse = (tab, date) => { const k = `${tab}-${date}`; collapsedDays.value[k] = !collapsedDays.value[k]; };
+                const isCollapsed = (tab, date) => !!collapsedDays.value[`${tab}-${date}`];
+
+                const addListSetting = (key) => {
+                    let v = '';
+                    if (key === 'people') { v = newSettingValue.value; newSettingValue.value = ''; }
+                    else if (key === 'paymentMethods') { v = newPaymentValue.value; newPaymentValue.value = ''; }
+                    else if (key === 'expenseTypes') { v = newExpenseValue.value; newExpenseValue.value = ''; }
+                    else if (key === 'linkTypes') { v = newLinkTypeValue.value; newLinkTypeValue.value = ''; }
+                    if (v && v.trim() && !selectedTrip.value[key].includes(v.trim())) selectedTrip.value[key].push(v.trim());
+                };
+                const removeListSetting = (key, idx) => { if (selectedTrip.value[key].length > 1) selectedTrip.value[key].splice(idx, 1); };
+
+                const handleDocSelection = (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    // 1. Alerta se o arquivo original for maior que 1MB (1.048.576 bytes)
+                    const ONE_MB = 500 * 1024;
+                    if (file.size > ONE_MB) {
+                        const sizeInMB = (file.size / ONE_MB).toFixed(2);
+                        alert(`Atenção: Este arquivo é muito grande (${sizeInMB/2}MB). \nO limite recomendado para evitar travamentos é de 500KB por foto.`);
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            // Lógica de compressão que já implementamos anteriormente
+                            const MAX_WIDTH = 1000;
+                            const QUALITY = 0.7;
+
+                            let width = img.width;
+                            let height = img.height;
+
+                            if (width > MAX_WIDTH) {
+                                height *= MAX_WIDTH / width;
+                                width = MAX_WIDTH;
+                            }
+
+                            const canvas = document.createElement('canvas');
+                            canvas.width = width;
+                            canvas.height = height;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(img, 0, 0, width, height);
+
+                            const compressedBase64 = canvas.toDataURL('image/jpeg', QUALITY);
+
+                            // 2. Verificação final contra o limite total do LocalStorage (3MB)
+                            const estimatedSizeInBytes = compressedBase64.length * 2;
+                            const limit = 3 * 1024 * 1024;
+
+                            if (storageUsage.value + estimatedSizeInBytes > limit) {
+                                alert("Erro: Espaço insuficiente no armazenamento do navegador.");
+                                return;
+                            }
+
+                            const name = prompt("Nome do documento:", file.name.split('.')[0]) || "Documento";
+                            if (!selectedTrip.value.docs) selectedTrip.value.docs = [];
+
+                            selectedTrip.value.docs.push({
+                                id: Date.now().toString(),
+                                data: compressedBase64,
+                                type: 'image/jpeg',
+                                name: name
+                            });
+                        };
+                        img.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                };
+
+                const viewDocument = (doc) => viewingDoc.value = doc;
+
+                const startClearData = () => showClearConfirmStep1.value = true;
+                const goToClearStep2 = () => { showClearConfirmStep1.value = false; showClearConfirmStep2.value = true; };
+                const confirmClearAll = () => { trips.value = []; collapsedDays.value = {}; showClearConfirmStep2.value = false; alert('Limpo!'); goHome(); };
+
+                const handleTestData = () => { if (trips.value.length > 0) showConfirmTestData.value = true; else confirmTestData(); };
+                const confirmTestData = () => {
+                    const now = new Date();
+                    const f = (d) => { const x = new Date(now); x.setDate(x.getDate() + d); return x.toISOString().split('T')[0]; };
+                    trips.value = [
+                        migrateTrip({
+                            id: 'nyc-real', location: 'Nova York, EUA', startDate: f(30), endDate: f(40), people: ["Daniel", "Dina"],
+                            finance: [
+                                { id: 'f1', name: 'Passagens Delta', value: 4200, date: f(30), paidBy: 'Daniel', method: 'Cartão', type: 'Passagens' },
+                                { id: 'f2', name: 'Hotel Marriott Times Square', value: 8500, date: f(30), paidBy: 'Dina', method: 'Cartão', type: 'Hospedagem' },
+                                { id: 'f3', name: 'Jantar Keens Steakhouse', value: 650, date: f(31), paidBy: 'Daniel', method: 'Cartão', type: 'Alimentação' },
+                                { id: 'f4', name: 'MetroCard Ilimitado', value: 180, date: f(31), paidBy: 'Daniel', method: 'Dinheiro', type: 'Transporte' },
+                                { id: 'f5', name: 'Edge Observatory', value: 220, date: f(32), paidBy: 'Dina', method: 'Pix', type: 'Turismo' },
+                                { id: 'f6', name: 'Apple Store Shopping', value: 5500, date: f(33), paidBy: 'Daniel', method: 'Cartão', type: 'Compras' },
+                                { id: 'f7', name: 'Shake Shack Lunch', value: 120, date: f(33), paidBy: 'Dina', method: 'Dinheiro', type: 'Alimentação' },
+                                { id: 'f8', name: 'Lion King Broadway', value: 950, date: f(34), paidBy: 'Daniel', method: 'Cartão', type: 'Lazer' },
+                                { id: 'f9', name: 'Seguro Allianz', value: 450, date: f(30), paidBy: 'Dina', method: 'Pix', type: 'Saúde' },
+                                { id: 'f10', name: 'Uber JFK', value: 350, date: f(40), paidBy: 'Daniel', method: 'Dinheiro', type: 'Transporte' }
+                            ],
+                            itinerary: [
+                                { id: 'i1', name: 'Voo GRU -> JFK', date: f(30), time: '22:00', done: true },
+                                { id: 'i2', name: 'Check-in Hotel', date: f(31), time: '14:00', done: false },
+                                { id: 'i3', name: 'Central Park Walk', date: f(31), time: '16:30', done: false },
+                                { id: 'i4', name: 'Museu História Natural', date: f(32), time: '10:00', done: false },
+                                { id: 'i5', name: 'High Line Sunset', date: f(32), time: '18:00', done: false },
+                                { id: 'i6', name: '5th Ave Shopping', date: f(33), time: '10:00', done: false },
+                                { id: 'i7', name: 'Statue of Liberty', date: f(34), time: '09:00', done: false },
+                                { id: 'i8', name: '9/11 Memorial', date: f(34), time: '14:00', done: false },
+                                { id: 'i9', name: 'Brooklyn Bridge', date: f(35), time: '17:00', done: false },
+                                { id: 'i10', name: 'Retorno JFK', date: f(40), time: '20:00', done: false }
+                            ],
+                            links: [
+                                { id: 'l1', name: 'Marriott Voucher', url: 'https://marriott.com', category: 'Reservas' },
+                                { id: 'l2', name: 'Bilhete Delta', url: 'https://delta.com', category: 'Transporte' },
+                                { id: 'l3', name: 'Guia Eater NYC', url: 'https://eater.com', category: 'Dicas' },
+                                { id: 'l4', name: 'CityPASS', url: 'https://citypass.com', category: 'Ingressos' },
+                                { id: 'l5', name: 'Mapa do Metrô', url: 'https://mta.info', category: 'Mapas' },
+                                { id: 'l6', name: 'Tickets Broadway', url: 'https://broadway.com', category: 'Reservas' },
+                                { id: 'l7', name: 'TimeOut Events', url: 'https://timeout.com', category: 'Dicas' },
+                                { id: 'l8', name: 'Woodbury Map', url: 'https://maps.google.com', category: 'Mapas' },
+                                { id: 'l9', name: 'Allianz Policy', url: 'https://allianz.com', category: 'Dicas' },
+                                { id: 'l10', name: 'Tempo NYC', url: 'https://accuweather.com', category: 'Dicas' }
+                            ], docs: []
+                        }),
+                        migrateTrip({
+                            id: 'lisboa-real', location: 'Lisboa, Portugal', startDate: f(100), endDate: f(110), people: ["Daniel", "Dina"],
+                            finance: [
+                                { id: 'f11', name: 'Voo TAP', value: 3800, date: f(100), paidBy: 'Dina', method: 'Cartão', type: 'Passagens' },
+                                { id: 'f12', name: 'Airbnb Alfama', value: 2900, date: f(100), paidBy: 'Daniel', method: 'Cartão', type: 'Hospedagem' },
+                                { id: 'f13', name: 'Jantar Ponto Final', value: 250, date: f(101), paidBy: 'Dina', method: 'Dinheiro', type: 'Alimentação' },
+                                { id: 'f14', name: 'Car Rental', value: 1200, date: f(102), paidBy: 'Daniel', method: 'Cartão', type: 'Transporte' },
+                                { id: 'f15', name: 'Castelo S. Jorge', value: 80, date: f(102), paidBy: 'Dina', method: 'Dinheiro', type: 'Turismo' },
+                                { id: 'f16', name: 'Vinhos Alentejo', value: 450, date: f(103), paidBy: 'Daniel', method: 'Pix', type: 'Compras' },
+                                { id: 'f17', name: 'Pastéis de Belém', value: 60, date: f(104), paidBy: 'Dina', method: 'Dinheiro', type: 'Alimentação' },
+                                { id: 'f18', name: 'Show de Fado', value: 300, date: f(104), paidBy: 'Daniel', method: 'Cartão', type: 'Lazer' },
+                                { id: 'f19', name: 'Trem Sintra', value: 45, date: f(105), paidBy: 'Dina', method: 'Dinheiro', type: 'Transporte' },
+                                { id: 'f20', name: 'Farmácia', value: 90, date: f(105), paidBy: 'Daniel', method: 'Pix', type: 'Saúde' }
+                            ],
+                            itinerary: [
+                                { id: 'i11', name: 'Chegada LIS', date: f(100), time: '08:00', done: true },
+                                { id: 'i12', name: 'Walk Alfama', date: f(101), time: '10:00', done: true },
+                                { id: 'i13', name: 'View Point Sra Monte', date: f(101), time: '17:30', done: false },
+                                { id: 'i14', name: 'LX Factory', date: f(102), time: '15:00', done: false },
+                                { id: 'i15', name: 'Torre Belem', date: f(103), time: '10:00', done: false },
+                                { id: 'i16', name: 'Jerónimos', date: f(103), time: '14:00', done: false },
+                                { id: 'i17', name: 'Cascais Trip', date: f(104), time: '09:00', done: false },
+                                { id: 'i18', name: 'Pena Sintra', date: f(105), time: '10:00', done: false },
+                                { id: 'i19', name: 'Regaleira', date: f(105), time: '14:30', done: false },
+                                { id: 'i20', name: 'Voo Retorno', date: f(110), time: '11:00', done: false }
+                            ],
+                            links: [
+                                { id: 'l11', name: 'Airbnb Voucher', url: 'https://airbnb.com', category: 'Reservas' },
+                                { id: 'l12', name: 'TAP Checkin', url: 'https://flytap.com', category: 'Transporte' },
+                                { id: 'l13', name: 'CP Comboios', url: 'https://cp.pt', category: 'Transporte' },
+                                { id: 'l14', name: 'Lisboa Guide', url: 'https://lisboa.com', category: 'Dicas' },
+                                { id: 'l15', name: 'Maps Portugal', url: 'https://google.com', category: 'Mapas' },
+                                { id: 'l16', name: 'Site Pasteis Belem', url: 'https://pasteisdebelem.pt', category: 'Dicas' },
+                                { id: 'l17', name: 'Sintra Tickets', url: 'https://parquesdesintra.pt', category: 'Ingressos' },
+                                { id: 'l18', name: 'TimeOut Lisboa', url: 'https://timeout.pt', category: 'Dicas' },
+                                { id: 'l19', name: 'Free Walking Tour', url: 'https://freetour.com', category: 'Dicas' },
+                                { id: 'l20', name: 'LX Factory Map', url: 'https://lxfactory.com', category: 'Mapas' }
+                            ], docs: []
+                        })
+                    ];
+                    showConfirmTestData.value = false;
+                    alert('Dados carregados com sucesso!');
+                };
+
+                const groupedFinance = computed(() => {
+                    const g = {};
+                    [...selectedTrip.value?.finance || []].sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(i => {
+                        if (!g[i.date]) g[i.date] = { items: [], total: 0 };
+                        g[i.date].items.push(i); g[i.date].total += (i.value || 0);
+                    });
+                    return g;
+                });
+                const totalFinance = computed(() => selectedTrip.value?.finance?.reduce((s, i) => s + (i.value || 0), 0) || 0);
+                const categoryTotals = computed(() => {
+                    const t = {};
+                    selectedTrip.value?.finance?.forEach(i => { const c = i.type || 'Diversos'; t[c] = (t[c] || 0) + Number(i.value || 0); });
+                    return Object.fromEntries(Object.entries(t).sort(([, a], [, b]) => b - a));
+                });
+                const financeSummary = computed(() => {
+                    if (!selectedTrip.value) return { byPerson: {}, transfers: [] };
+                    const totals = {};
+                    selectedTrip.value.people.forEach(p => totals[p] = 0);
+                    let gt = 0;
+                    selectedTrip.value.finance.forEach(i => { if (totals[i.paidBy] !== undefined) { const v = Number(i.value || 0); totals[i.paidBy] += v; gt += v; } });
+                    const fair = gt / (selectedTrip.value.people.length || 1);
+                    let balances = selectedTrip.value.people.map(p => ({ name: p, amount: totals[p] - fair }));
+                    const trans = [];
+                    let ds = balances.filter(b => b.amount < -0.01).sort((a, b) => a.amount - b.amount);
+                    let cs = balances.filter(b => b.amount > 0.01).sort((a, b) => b.amount - a.amount);
+                    let dIdx = 0, cIdx = 0;
+                    while (dIdx < ds.length && cIdx < cs.length) {
+                        let amt = Math.min(Math.abs(ds[dIdx].amount), cs[cIdx].amount);
+                        if (amt > 0.01) trans.push({ from: ds[dIdx].name, to: cs[cIdx].name, amount: amt });
+                        ds[dIdx].amount += amt; cs[cIdx].amount -= amt;
+                        if (Math.abs(ds[dIdx].amount) < 0.01) dIdx++;
+                        if (Math.abs(cs[cIdx].amount) < 0.01) cIdx++;
+                    }
+                    return { byPerson: totals, transfers: trans };
+                });
+
+                const groupedItinerary = computed(() => {
+                    const g = {};
+                    [...selectedTrip.value?.itinerary || []].sort((a, b) => new Date(a.date) - new Date(b.date) || a.time.localeCompare(b.time)).forEach(i => {
+                        if (!g[i.date]) g[i.date] = []; g[i.date].push(i);
+                    });
+                    return g;
+                });
+                const groupedLinks = computed(() => {
+                    const g = {};
+                    selectedTrip.value?.links?.forEach(i => { const c = i.category || 'Outros'; if (!g[c]) g[c] = []; g[c].push(i); });
+                    return g;
+                });
+
+                const formatDate = (d) => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : '';
+                const formatCurrency = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+                const getDaysUntil = (d) => { const diff = Math.ceil((new Date(d) - new Date()) / 86400000); return diff < 0 ? 'Concluída' : diff === 0 ? 'Hoje!' : `Faltam ${diff} dias`; };
+                const normalize = (s) => s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                const getCategoryIcon = (t) => ({ alimentacao: 'utensils', transporte: 'car', turismo: 'camera', compras: 'shopping-bag', saude: 'plus-square', hospedagem: 'home', passagens: 'plane', lazer: 'ticket', diversos: 'tag' }[normalize(t)] || 'tag');
+                const getCategoryColor = (t) => ({ alimentacao: 'bg-orange-500', transporte: 'bg-blue-500', turismo: 'bg-purple-500', compras: 'bg-pink-500', saude: 'bg-red-500', hospedagem: 'bg-emerald-500', passagens: 'bg-cyan-600', lazer: 'bg-yellow-500', diversos: 'bg-gray-400' }[normalize(t)] || 'bg-gray-400');
+                const getModalTitle = computed(() => ({ finance: 'Gasto', itinerary: 'Item', links: 'Link' }[activeAddModal.value]));
+                const exportData = () => {
+                    const b = new Blob([JSON.stringify({ trips: trips.value, collapsed: collapsedDays.value, settings: settings.value })], { type: 'application/json' });
+                    const u = URL.createObjectURL(b); const a = document.createElement('a'); a.href = u; a.download = `TripPlanner_Backup.json`; a.click();
+                };
+                const importData = (e) => {
+                    const r = new FileReader(); r.onload = (ev) => {
+                        try { const d = JSON.parse(ev.target.result); if (d.trips) { trips.value = d.trips; collapsedDays.value = d.collapsed || {}; settings.value = d.settings || { hideDevButtons: false }; } else if (Array.isArray(d)) { trips.value = d; } alert('Importado com sucesso!'); } catch (ex) { alert('Erro ao importar arquivo.'); }
+                    }; r.readAsText(e.target.files[0]);
+                };
+
+                // Calcula o tamanho ocupado apenas pelos documentos das viagens atuais
+                const storageUsage = computed(() => {
+                    let total = 0;
+                    trips.value.forEach(trip => {
+                        if (trip.docs) {
+                            trip.docs.forEach(doc => {
+                                // doc.data contém a string Base64. Cada caractere = 2 bytes em UTF-16
+                                total += (doc.data.length * 2);
+                            });
+                        }
+                    });
+                    return total;
+                });
+
+                const storageUsageMB = computed(() => (storageUsage.value / (1024 * 1024)).toFixed(2));
+
+                const storagePercent = computed(() => {
+                    const limit = 3 * 1024 * 1024; // 3MB
+                    return Math.min((storageUsage.value / limit) * 100, 100);
+                });
+
+                return {
+                    trips, selectedTrip, currentTab, tabs, isDark, toggleDarkMode, displayTitle, settings,
+                    showNewTripModal, formTrip, saveTrip, openEditTrip, selectTrip, goHome, closeTripModal,
+                    formatDate, formatCurrency, getDaysUntil, exportData, importData,
+                    activeAddModal, openAddModal, openEditItem, isEditing, formItem, saveItem,
+                    triggerDelete, executeDelete, showDeleteConfirm, deleteContext,
+                    groupedFinance, totalFinance, categoryTotals, financeSummary, getCategoryIcon, getCategoryColor,
+                    groupedItinerary, groupedLinks, getModalTitle,
+                    handleDocSelection, viewingDoc, viewDocument,
+                    handleTestData, showConfirmTestData, confirmTestData,
+                    addListSetting, removeListSetting, newSettingValue, newPaymentValue, newExpenseValue, newLinkTypeValue,
+                    startClearData, goToClearStep2, confirmClearAll, showClearConfirmStep1, showClearConfirmStep2,
+                    toggleCollapse, isCollapsed,
+                    updateAvailable, refreshApp, storageUsageMB, storagePercent
+                };
+            }
+        }).mount('#app');
+    </script>
 </body>
+
 </html>
