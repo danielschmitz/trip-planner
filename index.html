@@ -795,15 +795,18 @@
                         });
                     }
 
-                    // Aguarda o SW estar pronto para pedir a versão
-                    if (navigator.serviceWorker.controller) {
-                        fetchSwVersion();
-                    } else {
-                        // Caso seja a primeira vez ou refresh forçado, aguarda o registo
-                        navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    // Função para tentar obter a versão com repetição se necessário
+                    const tryGetVersion = () => {
+                        if (navigator.serviceWorker.controller) {
                             fetchSwVersion();
-                        });
-                    }
+                        } else {
+                            // Se ainda não houver controller, tenta novamente quando ele mudar
+                            navigator.serviceWorker.addEventListener('controllerchange', fetchSwVersion);
+                        }
+                    };
+
+                    // Executa a tentativa
+                    tryGetVersion();
 
                 });
 

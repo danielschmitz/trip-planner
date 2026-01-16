@@ -3,7 +3,7 @@
  * Responsável pelo cache offline e gestão de atualizações.
  */
 
-const CACHE_NAME = 'tripplanner-v3';
+const CACHE_NAME = 'tripplanner-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -52,18 +52,17 @@ self.addEventListener('fetch', (event) => {
  * Escuta mensagens enviadas pela aplicação cliente (Vue/JS).
  * O comando SKIP_WAITING força o novo Service Worker a assumir o controle imediatamente.
  */
+// No seu sw.js (substitua o evento message existente)
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+  } 
+  // ADICIONE ESTE BLOCO ABAIXO:
+  else if (event.data && event.data.type === 'GET_VERSION') {
+    if (event.ports && event.ports[0]) {
+      event.ports[0].postMessage({
+        version: CACHE_NAME
+      });
+    }
   }
 });
-
-// No final do seu ficheiro sw.js
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'GET_VERSION') {
-    event.ports[0].postMessage({
-      version: CACHE_NAME
-    });
-  }
-});
-
