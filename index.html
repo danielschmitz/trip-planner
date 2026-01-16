@@ -212,20 +212,23 @@
             <div v-else>
                 <div class="flex gap-2 mb-6">
                     <button @click="goHome"
-                        class="p-3 bg-gray-200/50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">
+                        class="p-3 bg-gray-200/50 dark:bg-gray-800/50 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors shrink-0">
                         <i data-lucide="arrow-left" class="w-5 h-5"></i>
                     </button>
-                    <!-- Novo Botão de PDF -->
-                    <button @click="exportTripPDF" title="Exportar Relatório PDF"
-                        class="p-3 bg-red-100 dark:bg-red-900/30 rounded-xl hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors text-red-600 dark:text-red-400">
-                        <i data-lucide="file-text" class="w-5 h-5"></i>
-                    </button>
+                    
                     <div class="flex-grow flex bg-gray-200/50 dark:bg-gray-800/50 p-1 rounded-xl">
-                        <button v-for="tab in tabs" :key="tab.id" @click="currentTab = tab.id" :title="tab.label"
-                            :class="['flex-1 flex items-center justify-center py-2 rounded-lg transition-all', 
-                        currentTab === tab.id ? 'bg-white dark:bg-gray-700 shadow-sm text-primary scale-105' : 'text-gray-500']">
-                            <i :data-lucide="tab.icon" class="w-5 h-5"></i>
-                        </button>
+                        <template v-for="tab in tabs" :key="tab.id">
+                            <button @click="currentTab = tab.id" :title="tab.label"
+                                :class="['flex-1 flex items-center justify-center py-2 rounded-lg transition-all', 
+                            currentTab === tab.id ? 'bg-white dark:bg-gray-700 shadow-sm text-primary scale-105' : 'text-gray-500']">
+                                <i :data-lucide="tab.icon" class="w-5 h-5"></i>
+                            </button>
+                            <!-- Botão PDF inserido entre 'docs' e 'settings' -->
+                            <button v-if="tab.id === 'docs'" @click="exportTripPDF" title="Exportar Relatório PDF"
+                                class="flex-1 flex items-center justify-center py-2 text-gray-500 hover:scale-110 transition-transform">
+                                <i data-lucide="printer" class="w-5 h-5"></i>
+                            </button>
+                        </template>
                     </div>
                 </div>
 
@@ -1170,7 +1173,7 @@
                     link.click();
                 };
 
-                // Lógica de Geração de PDF Completo (Ajuste de Fotos e Resumo de Links)
+                // Lógica de Geração de PDF Completo (Fotos Proporcionais e Links Incluídos)
                 const exportTripPDF = () => {
                     const { jsPDF } = window.jspdf;
                     const doc = new jsPDF();
@@ -1304,7 +1307,7 @@
 
                     currentY = doc.lastAutoTable.finalY + 15;
 
-                    // --- 5. RESUMO DE LINKS (ADICIONADO) ---
+                    // --- 5. RESUMO DE LINKS ---
                     if (trip.links && trip.links.length > 0) {
                         if (currentY > pageHeight - 40) { doc.addPage(); currentY = 20; }
                         doc.setFont("helvetica", "bold");
@@ -1357,7 +1360,7 @@
                                     }
 
                                     // Verifica se cabe na página com o novo tamanho
-                                    if (currentY + height + 10 > pageHeight) {
+                                    if (currentY + height + 15 > pageHeight) {
                                         doc.addPage();
                                         currentY = 20;
                                     }
