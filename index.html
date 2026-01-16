@@ -796,9 +796,14 @@
                     }
 
                     // Aguarda o SW estar pronto para pedir a versão
-                    navigator.serviceWorker.ready.then(() => {
+                    if (navigator.serviceWorker.controller) {
                         fetchSwVersion();
-                    });
+                    } else {
+                        // Caso seja a primeira vez ou refresh forçado, aguarda o registo
+                        navigator.serviceWorker.addEventListener('controllerchange', () => {
+                            fetchSwVersion();
+                        });
+                    }
 
                 });
 
@@ -1139,7 +1144,7 @@
                     return Math.min((storageUsage.value / limit) * 100, 100);
                 });
 
-                const swVersion = ref('.');
+                const swVersion = ref('..');
 
                 const fetchSwVersion = () => {
                     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
