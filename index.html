@@ -1147,7 +1147,7 @@
                     return Math.min((storageUsage.value / limit) * 100, 100);
                 });
 
-                const swVersion = ref('...');
+                const swVersion = ref('');
 
                 const fetchSwVersion = () => {
                     if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
