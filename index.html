@@ -107,7 +107,7 @@
                             <button @click.stop="openEditTrip(trip)" class="p-2 text-gray-400 hover:text-primary transition-colors">
                                 <i data-lucide="pencil" class="w-4 h-4"></i>
                             </button>
-                            <button @click.stop="deleteTrip(trip.id)" class="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                            <button @click.stop="triggerDelete('trips', trip.id, trip.location)" class="p-2 text-gray-400 hover:text-red-500 transition-colors">
                                 <i data-lucide="trash-2" class="w-4 h-4"></i>
                             </button>
                         </div>
@@ -174,7 +174,7 @@
                                 <div class="text-right flex items-center gap-2 shrink-0 ml-2">
                                     <p class="font-bold text-sm mr-2">{{ formatCurrency(item.value) }}</p>
                                     <button @click="openEditItem('finance', item)" class="p-1 text-gray-400 hover:text-primary"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
-                                    <button @click="removeItem('finance', item.id)" class="p-1 text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                                    <button @click="triggerDelete('finance', item.id, item.name)" class="p-1 text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                                 </div>
                             </div>
                         </div>
@@ -246,7 +246,7 @@
                                 </div>
                                 <div class="flex gap-1 shrink-0 ml-2">
                                     <button @click="openEditItem('itinerary', item)" class="p-1 text-gray-400 hover:text-primary"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
-                                    <button @click="removeItem('itinerary', item.id)" class="p-1 text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                                    <button @click="triggerDelete('itinerary', item.id, item.name)" class="p-1 text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                                 </div>
                             </div>
                         </div>
@@ -267,7 +267,7 @@
                                     <i data-lucide="link-2" class="w-4 h-4 text-blue-500"></i>
                                     <span class="text-sm font-medium truncate">{{ link.name }}</span>
                                 </a>
-                                <button @click="removeItem('links', link.id)" class="p-1 text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                                <button @click="triggerDelete('links', link.id, link.name)" class="p-1 text-gray-400 hover:text-red-500"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                             </div>
                         </div>
                     </div>
@@ -285,8 +285,8 @@
                                 <img v-else :src="doc.data" class="object-cover w-full h-full">
                             </div>
                             <div class="flex justify-between items-center px-1">
-                                <p class="text-[11px] font-bold truncate flex-grow">{{ doc.name }}</p>
-                                <button @click.stop="removeItem('docs', doc.id)" class="text-red-500 ml-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                                <p class="text-[11px] font-bold truncate flex-grow text-center">{{ doc.name }}</p>
+                                <button @click.stop="triggerDelete('docs', doc.id, doc.name)" class="text-red-500 ml-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
                             </div>
                         </div>
                     </div>
@@ -414,9 +414,56 @@
         </div>
     </div>
 
+    <!-- Modal de Confirmação de Exclusão (GENÉRICO) -->
+    <div v-if="showDeleteConfirm" class="fixed inset-0 bg-black/70 backdrop-blur-md z-[150] flex items-center justify-center p-6 animate-fade-in">
+        <div class="bg-white dark:bg-gray-800 w-full max-w-xs rounded-[32px] p-8 shadow-2xl text-center animate-slide-up border border-gray-100 dark:border-gray-700">
+            <div class="bg-red-50 dark:bg-red-900/20 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i data-lucide="alert-triangle" class="w-10 h-10 text-red-500"></i>
+            </div>
+            <h3 class="text-xl font-black mb-2">Excluir item?</h3>
+            <p class="text-gray-500 text-sm mb-8 leading-relaxed">
+                Tem certeza que deseja remover <span class="font-bold text-gray-900 dark:text-white">"{{ deleteContext.title }}"</span>? Esta ação não pode ser desfeita.
+            </p>
+            <div class="flex flex-col gap-3">
+                <button @click="executeDelete" class="w-full bg-red-500 hover:bg-red-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-red-500/20 active:scale-95 transition-all">
+                    Sim, Excluir
+                </button>
+                <button @click="showDeleteConfirm = false" class="w-full py-3 text-gray-400 font-bold hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                    Cancelar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Visualização de Documento (IMAGEM AMPLIADA) -->
+    <div v-if="viewingDoc" class="fixed inset-0 bg-black/95 z-[100] flex flex-col items-center justify-center p-4 animate-fade-in">
+        <header class="w-full flex justify-between items-center text-white mb-4">
+            <h3 class="font-bold truncate px-4">{{ viewingDoc.name }}</h3>
+            <button @click="viewingDoc = null" class="p-2 bg-white/10 rounded-full hover:bg-white/20">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </header>
+        
+        <div class="flex-grow w-full flex items-center justify-center overflow-auto no-scrollbar">
+            <div v-if="viewingDoc.type.includes('pdf')" class="text-white text-center">
+                <i data-lucide="file-text" class="w-24 h-24 mx-auto mb-4 opacity-50"></i>
+                <p>O navegador não suporta prévia de PDF em base64.</p>
+                <p class="text-sm opacity-60">Use o botão de download abaixo.</p>
+            </div>
+            <img v-else :src="viewingDoc.data" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl">
+        </div>
+
+        <footer class="w-full p-6 flex justify-center gap-4">
+            <a :href="viewingDoc.data" :download="viewingDoc.name" class="flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-xl font-bold">
+                <i data-lucide="download" class="w-5 h-5"></i> Baixar Arquivo
+            </a>
+            <button @click="viewingDoc = null" class="bg-gray-800 text-white px-6 py-3 rounded-xl font-bold">Fechar</button>
+        </footer>
+    </div>
+
     <!-- Modals Diversos (Nova Viagem, Confirmações) -->
     <div v-if="showNewTripModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-        <div class="bg-white dark:bg-gray-800 w-full max-w-sm rounded-3xl p-6 shadow-2xl animate-slide-up">
+        <div class="bg-white dark:bg-gray-800 w-full max-sm rounded-3xl p-6 shadow-2xl animate-slide-up">
             <h3 class="text-xl font-bold mb-4">{{ isEditing ? 'Editar Viagem' : 'Nova Viagem' }}</h3>
             <div class="space-y-4">
                 <input v-model="formTrip.location" placeholder="Destino" class="w-full bg-gray-100 dark:bg-gray-700 rounded-xl p-3 outline-none">
@@ -426,7 +473,7 @@
                 </div>
                 <div class="flex gap-2 pt-4">
                     <button @click="closeTripModal" class="flex-1 py-3 text-gray-500 font-bold">Cancelar</button>
-                    <button @click="saveTrip" class="flex-1 bg-primary text-white py-3 rounded-xl font-bold">Criar</button>
+                    <button @click="saveTrip" class="flex-1 bg-primary text-white py-3 rounded-xl font-bold">Salvar</button>
                 </div>
             </div>
         </div>
@@ -462,6 +509,10 @@
             const showClearConfirmStep1 = ref(false);
             const showClearConfirmStep2 = ref(false);
             const viewingDoc = ref(null);
+
+            // Confirmação de Exclusão
+            const showDeleteConfirm = ref(false);
+            const deleteContext = ref({ type: '', id: '', title: '' });
 
             const newSettingValue = ref('');
             const newPaymentValue = ref('');
@@ -515,7 +566,7 @@
                 else localStorage.removeItem('tripplanner_last_trip_id');
             });
             watch(currentTab, (nv) => localStorage.setItem('tripplanner_last_tab', nv));
-            watch([selectedTrip, currentTab, showNewTripModal, activeAddModal, showConfirmTestData, showClearConfirmStep1, showClearConfirmStep2], () => nextTick(() => lucide.createIcons()));
+            watch([selectedTrip, currentTab, showNewTripModal, activeAddModal, showConfirmTestData, showClearConfirmStep1, showClearConfirmStep2, viewingDoc, showDeleteConfirm], () => nextTick(() => lucide.createIcons()));
 
             const toggleDarkMode = () => { isDark.value = !isDark.value; localStorage.setItem('tripplanner_theme', isDark.value ? 'dark' : 'light'); applyTheme(); };
             const applyTheme = () => document.documentElement.classList.toggle('dark', isDark.value);
@@ -526,6 +577,7 @@
                 if (!trip.expenseTypes) trip.expenseTypes = ["Alimentação", "Transporte", "Hospedagem", "Turismo", "Compras", "Saúde", "Passagens", "Lazer", "Diversos"];
                 if (!trip.linkTypes) trip.linkTypes = ["Reservas", "Ingressos", "Transporte", "Dicas", "Mapas"];
                 if (trip.itinerary) trip.itinerary.forEach(i => { if (i.done === undefined) i.done = false; });
+                if (!trip.docs) trip.docs = [];
                 return trip;
             };
 
@@ -544,7 +596,23 @@
             };
             const openEditTrip = (trip) => { isEditing.value = true; formTrip.value = { ...trip }; showNewTripModal.value = true; };
             const closeTripModal = () => { showNewTripModal.value = false; isEditing.value = false; formTrip.value = { location: '', startDate: '', endDate: '' }; };
-            const deleteTrip = (id) => { if (confirm('Excluir viagem?')) trips.value = trips.value.filter(t => t.id !== id); };
+            
+            // Lógica de Exclusão Melhorada
+            const triggerDelete = (type, id, title) => {
+                deleteContext.value = { type, id, title };
+                showDeleteConfirm.value = true;
+            };
+
+            const executeDelete = () => {
+                const { type, id } = deleteContext.value;
+                if (type === 'trips') {
+                    trips.value = trips.value.filter(t => t.id !== id);
+                    if (selectedTrip.value?.id === id) goHome();
+                } else {
+                    selectedTrip.value[type] = selectedTrip.value[type].filter(i => i.id !== id);
+                }
+                showDeleteConfirm.value = false;
+            };
 
             const openAddModal = (type) => {
                 isEditing.value = false; activeAddModal.value = type; formItem.value = { id: Date.now().toString() };
@@ -565,7 +633,6 @@
                 else { list.push({ ...formItem.value }); }
                 activeAddModal.value = null;
             };
-            const removeItem = (type, id) => { selectedTrip.value[type] = selectedTrip.value[type].filter(i => i.id !== id); };
 
             const toggleCollapse = (tab, date) => { const k = `${tab}-${date}`; collapsedDays.value[k] = !collapsedDays.value[k]; };
             const isCollapsed = (tab, date) => !!collapsedDays.value[`${tab}-${date}`];
@@ -583,7 +650,7 @@
             const handleDocSelection = (e) => {
                 const f = e.target.files[0]; if (!f) return;
                 const r = new FileReader(); r.onload = (ev) => { 
-                    const n = prompt("Nome:", f.name.split('.')[0]) || "Doc";
+                    const n = prompt("Nome do documento:", f.name.split('.')[0]) || "Documento";
                     if (!selectedTrip.value.docs) selectedTrip.value.docs = [];
                     selectedTrip.value.docs.push({ id: Date.now().toString(), data: ev.target.result, type: f.type, name: n }); 
                 }; r.readAsDataURL(f);
@@ -679,7 +746,7 @@
                     })
                 ];
                 showConfirmTestData.value = false;
-                alert('Dados reais carregados!');
+                alert('Dados carregados com sucesso!');
             };
 
             const groupedFinance = computed(() => {
@@ -744,15 +811,16 @@
             };
             const importData = (e) => {
                 const r = new FileReader(); r.onload = (ev) => {
-                    try { const d = JSON.parse(ev.target.result); if(d.trips) { trips.value = d.trips; collapsedDays.value = d.collapsed || {}; settings.value = d.settings || { hideDevButtons: false }; } else if(Array.isArray(d)) { trips.value = d; } alert('Importado!'); } catch(ex) { alert('Erro.'); }
+                    try { const d = JSON.parse(ev.target.result); if(d.trips) { trips.value = d.trips; collapsedDays.value = d.collapsed || {}; settings.value = d.settings || { hideDevButtons: false }; } else if(Array.isArray(d)) { trips.value = d; } alert('Importado com sucesso!'); } catch(ex) { alert('Erro ao importar arquivo.'); }
                 }; r.readAsText(e.target.files[0]);
             };
 
             return {
                 trips, selectedTrip, currentTab, tabs, isDark, toggleDarkMode, displayTitle, settings,
-                showNewTripModal, formTrip, saveTrip, openEditTrip, deleteTrip, selectTrip, goHome, closeTripModal,
+                showNewTripModal, formTrip, saveTrip, openEditTrip, selectTrip, goHome, closeTripModal,
                 formatDate, formatCurrency, getDaysUntil, exportData, importData,
-                activeAddModal, openAddModal, openEditItem, isEditing, formItem, saveItem, removeItem,
+                activeAddModal, openAddModal, openEditItem, isEditing, formItem, saveItem, 
+                triggerDelete, executeDelete, showDeleteConfirm, deleteContext,
                 groupedFinance, totalFinance, categoryTotals, financeSummary, getCategoryIcon, getCategoryColor,
                 groupedItinerary, groupedLinks, getModalTitle,
                 handleDocSelection, viewingDoc, viewDocument,
@@ -769,7 +837,6 @@
 <script>
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            // Registro básico para fins didáticos. Para um PWA real, sw.js deve existir.
             console.log('Ambiente PWA pronto.');
         });
     }
